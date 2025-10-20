@@ -15,9 +15,19 @@ Orca is an enterprise-grade financial operations platform designed for small inv
 - State Management: TanStack Query (React Query)
 - Routing: Wouter (lightweight client-side routing)
 
+## Recent Changes (October 20, 2025)
+
+- **Database Migration**: Converted from in-memory storage to PostgreSQL with full multi-tenant schema
+- **API Implementation**: Built complete REST API for clients, KYC applications, and documents with validation
+- **Frontend Integration**: Connected Dashboard, NewKYC form, and ClientDetail pages to real database
+- **Audit System**: Implemented audit logging for all create operations
+- **Data Seeding**: Created seed script with demo firm "Acme Capital Partners" and 4 sample clients
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design aesthetic: Dark theme (#19171f background) with teal accent (#3ea6b6), Bloomberg Terminal inspired
+Brand positioning: "Addepar for small hedge funds" - enterprise infrastructure for boutique firms
 
 ## System Architecture
 
@@ -41,23 +51,36 @@ Preferred communication style: Simple, everyday language.
 - UI state: React hooks and component state
 - Global state: React Context for theme and sidebar state
 
-**Routing**: Client-side routing implemented with Wouter, a lightweight alternative to React Router. Routes defined declaratively in `App.tsx`.
+**Routing**: Client-side routing implemented with Wouter. Active routes:
+- `/` - Landing page with firm positioning and logo carousels
+- `/dashboard` - Main application view with stats and client table
+- `/kyc/new` - Multi-step KYC form for new client onboarding
+- `/client/:id` - Client detail view with KYC history and approval actions
 
 ### Backend Architecture
 
 **Server Framework**: Express.js with TypeScript, structured as an ESM (ES Module) application.
 
-**API Pattern**: RESTful API design with routes prefixed under `/api`. Currently using a modular routing system (`server/routes.ts`) that registers endpoints to the Express app.
+**API Pattern**: RESTful API design with routes prefixed under `/api`. Modular routing system (`server/routes.ts`) provides:
+- **Client Management**: `GET /api/clients`, `POST /api/clients`, `GET /api/clients/:id`, `PATCH /api/clients/:id`
+- **KYC Applications**: `POST /api/kyc-applications`, `GET /api/clients/:id/kyc`, `PATCH /api/kyc-applications/:id`
+- **Documents**: `POST /api/kyc-applications/:id/documents`, `GET /api/kyc-applications/:id/documents`
+- **Dashboard**: `GET /api/dashboard/stats` (aggregated metrics)
+- **Validation**: Request body validation via Zod schemas from `drizzle-zod`
+- **Audit Logging**: All create operations logged with user context
 
-**Storage Layer**: Abstraction pattern via `IStorage` interface allowing swappable storage implementations:
-- **Current**: In-memory storage (`MemStorage`) for development
-- **Intended**: Database-backed storage via Drizzle ORM
+**Storage Layer**: Database-backed storage (`DbStorage`) implemented via `IStorage` interface:
+- **Implementation**: PostgreSQL storage via Drizzle ORM and Neon serverless
+- **CRUD Operations**: Full CRUD for firms, users, clients, KYC applications, documents, and audit logs
+- **Audit Trail**: All create operations automatically logged to audit_logs table
 
 **Database Schema** (Drizzle ORM):
 - PostgreSQL database accessed through Neon serverless
-- Current schema: `users` table with UUID primary keys
+- **Tables**: `firms`, `users`, `clients`, `kyc_applications`, `documents`, `audit_logs`
+- **Multi-Tenant Design**: All entities scoped by `firmId` for data isolation
 - Schema defined in `shared/schema.ts` with Zod validation integration
-- Migrations managed via Drizzle Kit
+- Migrations managed via Drizzle Kit (`npm run db:push`)
+- Seed data script creates demo firm and clients (`server/db/seed.ts`)
 
 **Development vs Production**:
 - Development: Vite dev server with HMR, proxied through Express
@@ -78,9 +101,22 @@ Preferred communication style: Simple, everyday language.
 - `MEDIUM`: Moderate risk requiring additional scrutiny
 - `HIGH`: High-risk client requiring enhanced due diligence
 
-**Client Data Structure**: Clients contain personal information, business details, KYC status, risk band, document references, and assignment information.
+**Client Data Structure** (`clients` table):
+- Personal: name, email, phone, type (individual/institutional/family_office/corporate)
+- Compliance: status (draft/submitted/under_review/approved/rejected/requires_update)
+- Risk: riskScore (0-100), computed risk band (low/medium/high)
+- Metadata: firmId, createdAt, updatedAt
 
-**Document Management**: File upload and verification system for identity documents, proof of address, and corporate documentation.
+**KYC Application Structure** (`kyc_applications` table):
+- References: clientId, userId (assigned compliance officer)
+- Status: draft/submitted/under_review/approved/rejected/requires_update
+- Data: personalInfo (JSON), businessInfo (JSON), complianceInfo (JSON)
+- Review: reviewedAt, reviewNotes
+
+**Document Management** (`documents` table):
+- Metadata: kycApplicationId, type, filename, filesize, mimetype
+- Storage: url (S3/blob storage reference)
+- Verification: verified (boolean), verifiedBy (userId), verifiedAt
 
 ### Build & Deployment
 
