@@ -18,9 +18,11 @@ const steps = [
 interface KYCFormStepperProps {
   onSubmit?: (data: any) => void;
   onSaveDraft?: (data: any) => void;
+  isSubmitting?: boolean;
+  isSavingDraft?: boolean;
 }
 
-export function KYCFormStepper({ onSubmit, onSaveDraft }: KYCFormStepperProps) {
+export function KYCFormStepper({ onSubmit, onSaveDraft, isSubmitting = false, isSavingDraft = false }: KYCFormStepperProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -261,8 +263,8 @@ export function KYCFormStepper({ onSubmit, onSaveDraft }: KYCFormStepperProps) {
                   Back
                 </Button>
               )}
-              <Button variant="outline" onClick={handleSaveDraft} data-testid="button-save-draft">
-                Save Draft
+              <Button variant="outline" onClick={handleSaveDraft} disabled={isSavingDraft} data-testid="button-save-draft">
+                {isSavingDraft ? "Saving..." : "Save Draft"}
               </Button>
             </div>
             <div>
@@ -271,8 +273,8 @@ export function KYCFormStepper({ onSubmit, onSaveDraft }: KYCFormStepperProps) {
                   Next
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} data-testid="button-submit">
-                  Submit for Review
+                <Button onClick={handleSubmit} disabled={isSubmitting} data-testid="button-submit">
+                  {isSubmitting ? "Submitting..." : "Submit for Review"}
                 </Button>
               )}
             </div>

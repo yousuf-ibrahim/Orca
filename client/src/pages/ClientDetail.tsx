@@ -2,40 +2,161 @@ import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ArrowLeft, Edit, FileText, Download } from "lucide-react";
+import { ArrowLeft, Edit, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-// TODO: Remove mock data when integrating with backend
-const mockClientData = {
-  id: "1",
-  name: "Sarah Johnson",
-  email: "sarah.johnson@techcorp.com",
-  phone: "+1 (555) 123-4567",
-  company: "TechCorp Investments",
-  businessType: "Corporate Entity",
-  taxId: "12-3456789",
-  address: "123 Wall Street, New York, NY 10005",
-  kycStatus: "APPROVED" as const,
-  riskBand: "LOW" as const,
-  submittedDate: "2024-01-15",
-  approvedDate: "2024-01-18",
-  assignedTo: "John Smith",
-  documents: [
-    { id: "1", name: "Passport.pdf", type: "ID Document", uploadDate: "2024-01-15", status: "Verified" },
-    { id: "2", name: "Utility_Bill.pdf", type: "Proof of Address", uploadDate: "2024-01-15", status: "Verified" },
-    { id: "3", name: "Business_Registration.pdf", type: "Corporate Docs", uploadDate: "2024-01-15", status: "Verified" },
-  ],
-};
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Client, KycApplication, Document } from "@shared/schema";
 
 export default function ClientDetail() {
   const [match, params] = useRoute("/client/:id");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  if (!match) {
+  if (!match || !params?.id) {
     return null;
   }
 
-  const client = mockClientData;
+  const clientId = parseInt(params.id);
+
+  const { data: client, isLoading: clientLoading, error: clientError } = useQuery<Client>({
+    queryKey: [`/api/clients/${clientId}`],
+  });
+
+  const { data: kycApp } = useQuery<KycApplication>({
+    queryKey: [`/api/clients/${clientId}/kyc`],
+    enabled: !!client,
+  });
+
+  const { data: documents } = useQuery<Document[]>({
+    queryKey: [`/api/kyc-applications/${kycApp?.id}/documents`],
+    enabled: !!kycApp,
+  });
+
+  const approveKycMutation = useMutation({
+    mutationFn: async () => {
+      if (!kycApp) throw new Error("No KYC application found");
+      
+      const updated = await apiRequest(`/api/kyc-applications/${kycApp.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "approved",
+          reviewedAt: new Date().toISOString(),
+          reviewNotes: "Application approved via client detail page",
+        }),
+      });
+
+      // Also update client status
+      await apiRequest(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "approved",
+        }),
+      });
+
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "kyc"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Application Approved",
+        description: "KYC application has been approved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve application",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectKycMutation = useMutation({
+    mutationFn: async () => {
+      if (!kycApp) throw new Error("No KYC application found");
+      
+      const updated = await apiRequest(`/api/kyc-applications/${kycApp.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "rejected",
+          reviewedAt: new Date().toISOString(),
+          reviewNotes: "Application requires additional documentation",
+        }),
+      });
+
+      await apiRequest(`/api/clients/${clientId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "requires_update",
+        }),
+      });
+
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "kyc"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Application Rejected",
+        description: "Client has been notified to update their application",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject application",
+        variant: "destructive",
+      });
+    },
+  });
+
+  if (clientLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/dashboard")}
+            className="mb-4"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <h1 className="text-3xl font-semibold">Loading...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (!client) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/dashboard")}
+            className="mb-4"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <h1 className="text-3xl font-semibold">Client not found</h1>
+        </div>
+      </div>
+    );
+  }
+
+  const kycStatus = kycApp?.status?.toUpperCase().replace(/_/g, '_') as any || "PENDING";
+  const riskBand = (client.riskScore 
+    ? (client.riskScore < 30 ? "LOW" : client.riskScore < 60 ? "MEDIUM" : "HIGH")
+    : "LOW") as any;
 
   return (
     <div className="space-y-6">
@@ -77,31 +198,11 @@ export default function ClientDetail() {
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Phone Number</span>
-              <p className="font-medium">{client.phone}</p>
+              <p className="font-medium">{client.phone || "—"}</p>
             </div>
             <div>
-              <span className="text-sm text-muted-foreground">Address</span>
-              <p className="font-medium">{client.address}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Business Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <span className="text-sm text-muted-foreground">Company Name</span>
-              <p className="font-medium">{client.company}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Business Type</span>
-              <p className="font-medium">{client.businessType}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Tax ID</span>
-              <p className="font-medium font-mono">{client.taxId}</p>
+              <span className="text-sm text-muted-foreground">Client Type</span>
+              <p className="font-medium">{client.type}</p>
             </div>
           </CardContent>
         </Card>
@@ -114,53 +215,61 @@ export default function ClientDetail() {
             <div>
               <span className="text-sm text-muted-foreground">KYC Status</span>
               <div className="mt-1">
-                <StatusBadge status={client.kycStatus} type="kyc" />
+                <StatusBadge status={kycStatus} type="kyc" />
               </div>
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Risk Assessment</span>
               <div className="mt-1">
-                <StatusBadge status={client.riskBand} type="risk" />
+                <StatusBadge status={riskBand} type="risk" />
               </div>
             </div>
             <div>
+              <span className="text-sm text-muted-foreground">Risk Score</span>
+              <p className="font-medium">{client.riskScore || "Pending"}</p>
+            </div>
+            <div>
               <span className="text-sm text-muted-foreground">Submitted Date</span>
-              <p className="font-medium">{new Date(client.submittedDate).toLocaleDateString()}</p>
+              <p className="font-medium">{new Date(client.createdAt).toLocaleDateString()}</p>
             </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Approved Date</span>
-              <p className="font-medium">{new Date(client.approvedDate).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Assigned To</span>
-              <p className="font-medium">{client.assignedTo}</p>
-            </div>
+            {kycApp?.reviewedAt && (
+              <div>
+                <span className="text-sm text-muted-foreground">Review Date</span>
+                <p className="font-medium">{new Date(kycApp.reviewedAt).toLocaleDateString()}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
+      </div>
 
+      {documents && documents.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Documents</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {client.documents.map((doc) => (
+              {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted hover-elevate"
+                  className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
                   data-testid={`document-${doc.id}`}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="font-medium text-sm">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">{doc.type}</p>
+                      <p className="font-medium">{doc.filename}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {doc.type} • {(doc.filesize / 1024).toFixed(0)} KB • 
+                        {" "}{new Date(doc.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">
-                      {doc.status}
-                    </Badge>
+                    {doc.verified ? (
+                      <Badge variant="default">Verified</Badge>
+                    ) : (
+                      <Badge variant="secondary">Pending</Badge>
+                    )}
                     <Button size="icon" variant="ghost" data-testid={`button-download-${doc.id}`}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -170,7 +279,32 @@ export default function ClientDetail() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {kycApp && kycApp.status === "submitted" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Review Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-3">
+            <Button 
+              onClick={() => approveKycMutation.mutate()}
+              disabled={approveKycMutation.isPending}
+              data-testid="button-approve"
+            >
+              {approveKycMutation.isPending ? "Approving..." : "Approve Application"}
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => rejectKycMutation.mutate()}
+              disabled={rejectKycMutation.isPending}
+              data-testid="button-reject"
+            >
+              {rejectKycMutation.isPending ? "Rejecting..." : "Request Updates"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

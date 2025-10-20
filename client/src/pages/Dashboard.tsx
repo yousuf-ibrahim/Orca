@@ -1,96 +1,67 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DashboardStats } from "@/components/DashboardStats";
-import { ClientTable, type Client } from "@/components/ClientTable";
+import { ClientTable } from "@/components/ClientTable";
 import { Plus } from "lucide-react";
 import { useLocation } from "wouter";
-
-// TODO: Remove mock data when integrating with backend
-const mockStats = {
-  totalClients: 247,
-  pendingReview: 18,
-  approvedClients: 203,
-  requiresAction: 12,
-};
-
-const mockClients: Client[] = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@techcorp.com",
-    company: "TechCorp Investments",
-    kycStatus: "APPROVED",
-    riskBand: "LOW",
-    submittedDate: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Michael Chen",
-    email: "m.chen@capitalgroup.com",
-    company: "Capital Group LLC",
-    kycStatus: "UNDER_REVIEW",
-    riskBand: "MEDIUM",
-    submittedDate: "2024-01-20",
-  },
-  {
-    id: "3",
-    name: "Emily Rodriguez",
-    email: "emily.r@gmail.com",
-    kycStatus: "REQUIRES_UPDATE",
-    riskBand: "MEDIUM",
-    submittedDate: "2024-01-18",
-  },
-  {
-    id: "4",
-    name: "David Kim",
-    email: "dkim@ventures.io",
-    company: "Ventures.io",
-    kycStatus: "SUBMITTED",
-    riskBand: "HIGH",
-    submittedDate: "2024-01-22",
-  },
-  {
-    id: "5",
-    name: "Lisa Anderson",
-    email: "l.anderson@wealth.com",
-    company: "Anderson Wealth Management",
-    kycStatus: "APPROVED",
-    riskBand: "LOW",
-    submittedDate: "2024-01-10",
-  },
-  {
-    id: "6",
-    name: "Robert Taylor",
-    email: "rtaylor@investments.com",
-    company: "Taylor Investments",
-    kycStatus: "UNDER_REVIEW",
-    riskBand: "LOW",
-    submittedDate: "2024-01-21",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import type { Client } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
 
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["/api/dashboard/stats"],
+  });
+
+  const { data: clientsData, isLoading: clientsLoading } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+  });
+
   const handleViewClient = (clientId: string) => {
-    console.log("View client:", clientId);
-    // TODO: Navigate to client detail page
     setLocation(`/client/${clientId}`);
   };
 
   const handleEditClient = (clientId: string) => {
-    console.log("Edit client:", clientId);
-    // TODO: Navigate to KYC edit page
     setLocation(`/kyc/${clientId}`);
   };
 
   const handleNewClient = () => {
-    console.log("New client clicked");
     setLocation("/kyc/new");
   };
 
-  const handleBackToDashboard = () => {
-    setLocation("/dashboard");
+  // Transform database clients to match ClientTable interface
+  const transformedClients = clientsData?.map(client => ({
+    id: client.id.toString(),
+    name: client.name,
+    email: client.email,
+    company: client.type,
+    kycStatus: client.status.toUpperCase().replace(/_/g, '_') as any,
+    riskBand: (client.riskScore 
+      ? (client.riskScore < 30 ? "LOW" : client.riskScore < 60 ? "MEDIUM" : "HIGH")
+      : "LOW") as any,
+    submittedDate: new Date(client.createdAt).toLocaleDateString('en-US'),
+  })) || [];
+
+  if (statsLoading || clientsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Loading...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const dashboardStats = {
+    totalClients: (stats as any)?.totalClients || 0,
+    pendingReview: (stats as any)?.pendingReviews || 0,
+    approvedClients: (stats as any)?.approvedThisMonth || 0,
+    requiresAction: transformedClients.filter(c => c.kycStatus === "REQUIRES_UPDATE").length,
   };
 
   return (
@@ -108,10 +79,10 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <DashboardStats stats={mockStats} />
+      <DashboardStats stats={dashboardStats} />
 
       <ClientTable
-        clients={mockClients}
+        clients={transformedClients}
         onViewClient={handleViewClient}
         onEditClient={handleEditClient}
       />
