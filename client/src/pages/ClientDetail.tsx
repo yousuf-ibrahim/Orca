@@ -42,7 +42,7 @@ export default function ClientDetail() {
       <div>
         <Button
           variant="ghost"
-          onClick={() => setLocation("/")}
+          onClick={() => setLocation("/dashboard")}
           className="mb-4"
           data-testid="button-back"
         >

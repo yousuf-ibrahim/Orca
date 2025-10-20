@@ -14,7 +14,7 @@ import {
 import { useLocation } from "wouter";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Clients", url: "/clients", icon: Users },
   { title: "KYC Applications", url: "/kyc", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
@@ -32,12 +32,12 @@ export function AppSidebar({ firmName = "Acme Capital", userRole = "Compliance O
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Building2 className="h-5 w-5" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <Building2 className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Orca</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Orca</h2>
             <p className="text-xs text-muted-foreground">{firmName}</p>
           </div>
         </div>

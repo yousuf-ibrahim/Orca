@@ -10,7 +10,7 @@ export default function NewKYC() {
     console.log("KYC submitted:", data);
     // TODO: Submit to backend API
     alert("KYC application submitted successfully!");
-    setLocation("/");
+    setLocation("/dashboard");
   };
 
   const handleSaveDraft = (data: any) => {
@@ -24,7 +24,7 @@ export default function NewKYC() {
       <div>
         <Button
           variant="ghost"
-          onClick={() => setLocation("/")}
+          onClick={() => setLocation("/dashboard")}
           className="mb-4"
           data-testid="button-back-to-dashboard"
         >
