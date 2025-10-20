@@ -1,0 +1,940 @@
+# REPLIT SCAFFOLD PROMPT (Paste into Replit Ghostwriter)
+
+```
+You are building the initial scaffold for Orca, a financial operations platform for small investment firms. This is a KYC/client onboarding MVP with multi-tenant architecture, designed to run immediately in Replit.
+
+CRITICAL: Generate ALL files with working code. No TODO stubs in critical paths. Use stable versions compatible with Next.js 14 and Prisma 5.
+
+## REPOSITORY STRUCTURE
+
+Create this exact structure:
+
+orca/
+├─ .replit
+├─ replit.nix
+├─ .env.local.example
+├─ .gitignore
+├─ package.json
+├─ turbo.json
+├─ apps/
+│  └─ web/
+│     ├─ package.json
+│     ├─ next.config.mjs
+│     ├─ postcss.config.mjs
+│     ├─ tailwind.config.ts
+│     ├─ tsconfig.json
+│     ├─ components.json
+│     ├─ prisma/
+│     │  └─ schema.prisma
+│     ├─ src/
+│     │  ├─ app/
+│     │  │  ├─ layout.tsx
+│     │  │  ├─ (auth)/
+│     │  │  │  └─ signin/page.tsx
+│     │  │  ├─ (dashboard)/
+│     │  │  │  ├─ layout.tsx
+│     │  │  │  ├─ page.tsx
+│     │  │  │  └─ kyc/
+│     │  │  │     ├─ new/page.tsx
+│     │  │  │     └─ [clientId]/page.tsx
+│     │  │  ├─ setup/page.tsx
+│     │  │  └─ api/
+│     │  │     ├─ auth/[...nextauth]/route.ts
+│     │  │     ├─ trpc/[trpc]/route.ts
+│     │  │     └─ health/route.ts
+│     │  ├─ components/
+│     │  │  ├─ ui/
+│     │  │  │  ├─ button.tsx
+│     │  │  │  ├─ card.tsx
+│     │  │  │  ├─ input.tsx
+│     │  │  │  ├─ label.tsx
+│     │  │  │  ├─ badge.tsx
+│     │  │  │  ├─ select.tsx
+│     │  │  │  ├─ textarea.tsx
+│     │  │  │  └─ form.tsx
+│     │  │  ├─ nav/
+│     │  │  │  └─ Sidebar.tsx
+│     │  │  ├─ layout/
+│     │  │  │  └─ AppShell.tsx
+│     │  │  └─ forms/
+│     │  │     └─ FormStepper.tsx
+│     │  ├─ server/
+│     │  │  ├─ db.ts
+│     │  │  ├─ auth.ts
+│     │  │  ├─ rbac.ts
+│     │  │  ├─ storage.ts
+│     │  │  ├─ audit.ts
+│     │  │  ├─ trpc.ts
+│     │  │  └─ routers/
+│     │  │     ├─ firm.ts
+│     │  │     ├─ users.ts
+│     │  │     ├─ kyc.ts
+│     │  │     └─ documents.ts
+│     │  ├─ lib/
+│     │  │  ├─ env.ts
+│     │  │  ├─ utils.ts
+│     │  │  └─ validators/
+│     │  │     ├─ kyc.ts
+│     │  │     └─ shared.ts
+│     │  └─ styles/
+│     │     └─ globals.css
+│     ├─ public/
+│     └─ scripts/
+│        └─ seed.ts
+└─ packages/
+
+## FILE CONTENTS
+
+### Root Configuration Files
+
+**/.replit**
+```toml
+run = "cd apps/web && pnpm run dev"
+hidden = [".config", ".next", "node_modules"]
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "cd apps/web && pnpm run build && pnpm run start"]
+```
+
+**/replit.nix**
+```nix
+{ pkgs }: {
+  deps = [
+    pkgs.nodejs-20_x
+    pkgs.postgresql
+    pkgs.openssl
+    pkgs.python3
+    pkgs.nodePackages.pnpm
+  ];
+}
+```
+
+**/.env.local.example**
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/orca"
+
+# Auth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+
+# Storage (optional for MVP)
+# S3_ENDPOINT=""
+# S3_BUCKET=""
+# S3_ACCESS_KEY=""
+# S3_SECRET_KEY=""
+```
+
+**/.gitignore**
+```
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+build/
+
+# env files
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# prisma
+prisma/migrations/
+
+# replit
+.replit
+.config
+```
+
+**/package.json**
+```json
+{
+  "name": "orca",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm -C apps/web dev",
+    "build": "pnpm -C apps/web build",
+    "start": "pnpm -C apps/web start",
+    "lint": "pnpm -C apps/web lint"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.1",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.15.1"
+}
+```
+
+**/turbo.json**
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "lint": {},
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}
+```
+
+### Web App Configuration
+
+**/apps/web/package.json**
+```json
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:studio": "prisma studio",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "next": "14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next-auth": "^4.24.5",
+    "@prisma/client": "^5.8.1",
+    "@trpc/server": "^10.45.0",
+    "@trpc/client": "^10.45.0",
+    "@trpc/react-query": "^10.45.0",
+    "@trpc/next": "^10.45.0",
+    "@tanstack/react-query": "^5.17.19",
+    "zod": "^3.22.4",
+    "bcryptjs": "^2.4.3",
+    "react-hook-form": "@hookform/react-hook-form@^7.49.3",
+    "@hookform/resolvers": "^3.3.4",
+    "@t3-oss/env-nextjs": "^0.9.2",
+    "lucide-react": "^0.312.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.0",
+    "framer-motion": "^10.18.0",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-select": "^2.0.0",
+    "superjson": "^2.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/bcryptjs": "^2.4.6",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "prisma": "^5.8.1",
+    "tsx": "^4.7.0"
+  }
+}
+```
+
+**/apps/web/next.config.mjs**
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
+  experimental: {
+    serverActions: {
+      enabled: true
+    }
+  },
+  webpack: (config) => {
+    config.externals.push({
+      'utf-8-validate': 'commonjs utf-8-validate',
+      'bufferutil': 'commonjs bufferutil',
+    })
+    return config
+  },
+}
+
+export default nextConfig
+```
+
+**/apps/web/postcss.config.mjs**
+```js
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+**/apps/web/tailwind.config.ts**
+```ts
+import type { Config } from "tailwindcss"
+
+const config = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config
+
+export default config
+```
+
+**/apps/web/tsconfig.json**
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "~/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+**/apps/web/components.json**
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.ts",
+    "css": "src/styles/globals.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "~/components",
+    "utils": "~/lib/utils"
+  }
+}
+```
+
+### Prisma Schema
+
+**/apps/web/prisma/schema.prisma**
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  COMPLIANCE
+  USER
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum KycStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  REQUIRES_UPDATE
+}
+
+enum RiskBand {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DocumentKind {
+  PASSPORT
+  DRIVERS_LICENSE
+  UTILITY_BILL
+  BANK_STATEMENT
+  TAX_RETURN
+  CORPORATE_DOCS
+  OTHER
+}
+
+model Firm {
+  id                      String   @id @default(cuid())
+  name                    String
+  primaryJurisdiction     String
+  operatingJurisdictions  String[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  users                   User[]
+  clients                 Client[]
+  documents               Document[]
+  auditEvents             AuditEvent[]
+
+  @@map("firms")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String?
+  role          UserRole @default(USER)
+  firmId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  firm          Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  auditEvents   AuditEvent[]
+
+  @@index([firmId])
+  @@map("users")
+}
+
+model Client {
+  id                String            @id @default(cuid())
+  firmId            String
+  name              String
+  email             String?
+  phone             String?
+  taxResidency      String[]
+  onboardingStatus  OnboardingStatus  @default(NOT_STARTED)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  firm              Firm              @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  kycRecords        KycRecord[]
+  documents         Document[]
+
+  @@index([firmId])
+  @@index([onboardingStatus])
+  @@map("clients")
+}
+
+model KycRecord {
+  id            String     @id @default(cuid())
+  clientId      String
+  jurisdiction  String
+  status        KycStatus  @default(DRAFT)
+  riskBand      RiskBand?
+  riskScore     Int        @default(0)
+  answers       Json       @default("{}")
+  reviewNotes   String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  client        Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([status])
+  @@map("kyc_records")
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  firmId        String
+  clientId      String?
+  kind          DocumentKind
+  filename      String
+  url           String
+  size          Int?
+  mimeType      String?
+  verified      Boolean      @default(false)
+  uploadedAt    DateTime     @default(now())
+
+  firm          Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client        Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([firmId])
+  @@index([clientId])
+  @@map("documents")
+}
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  firmId        String
+  userId        String
+  action        String
+  entityType    String
+  entityId      String?
+  before        Json?
+  after         Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  firm          Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+```
+
+### Environment & Utils
+
+**/apps/web/src/lib/env.ts**
+```ts
+import { createEnv } from "@t3-oss/env-nextjs"
+import { z } from "zod"
+
+export const env = createEnv({
+  server: {
+    DATABASE_URL: z.string().url(),
+    NEXTAUTH_SECRET: z.string().min(32),
+    NEXTAUTH_URL: z.string().url().optional(),
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  },
+  client: {},
+  runtimeEnv: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NODE_ENV: process.env.NODE_ENV,
+  },
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  emptyStringAsUndefined: true,
+})
+```
+
+**/apps/web/src/lib/utils.ts**
+```ts
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function formatDate(date: Date | string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(date))
+}
+
+export function formatCurrency(amount: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amount)
+}
+```
+
+**/apps/web/src/lib/validators/shared.ts**
+```ts
+import { z } from "zod"
+
+export const HIGH_RISK_JURISDICTIONS = [
+  "AF", "BY", "CF", "CU", "CD", "ER", "GN", "GW", "HT", "IR",
+  "IQ", "KP", "LB", "LY", "ML", "MM", "NI", "RU", "SO", "SS",
+  "SD", "SY", "VE", "YE", "ZW"
+]
+
+export const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+]
+
+export const jurisdictionSchema = z.enum(["US", "DIFC", "ADGM", "OTHER"])
+
+export const addressSchema = z.object({
+  line1: z.string().min(1, "Address line 1 required"),
+  line2: z.string().optional(),
+  city: z.string().min(1, "City required"),
+  state: z.string().optional(),
+  postalCode: z.string().min(1, "Postal code required"),
+  country: z.string().length(2, "Two-letter country code required"),
+})
+```
+
+**/apps/web/src/lib/validators/kyc.ts**
+```ts
+import { z } from "zod"
+import { addressSchema, jurisdictionSchema } from "./shared"
+
+export const identityStepSchema = z.object({
+  fullName: z.string().min(2, "Full name required"),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  nationality: z.string().length(2),
+  idType: z.enum(["PASSPORT", "DRIVERS_LICENSE", "NATIONAL_ID"]),
+  idNumber: z.string().min(1, "ID number required"),
+  idExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
+export const taxStepSchema = z.object({
+  taxResidency: z.array(z.string().length(2)).min(1, "At least one tax residency required"),
+  usCitizen: z.boolean(),
+  usGreenCard: z.boolean(),
+  usTaxId: z.string().optional(),
+  fatcaStatus: z.enum(["US_PERSON", "NON_US", "PASSIVE_NFFE", "ACTIVE_NFFE"]),
+  crsClassification: z.string().optional(),
+})
+
+export const sourceOfFundsSchema = z.object({
+  employmentStatus: z.enum(["EMPLOYED", "SELF_EMPLOYED", "RETIRED", "UNEMPLOYED", "STUDENT"]),
+  employer: z.string().optional(),
+  occupation: z.string().optional(),
+  annualIncome: z.enum(["0-50k", "50k-100k", "100k-250k", "250k-500k", "500k-1M", "1M+"]),
+  sourceOfWealth: z.array(z.enum(["SALARY", "BUSINESS", "INHERITANCE", "INVESTMENTS", "REAL_ESTATE", "OTHER"])),
+  isPep: z.boolean(),
+  pepDetails: z.string().optional(),
+})
+
+export const suitabilitySchema = z.object({
+  investmentExperience: z.enum(["NONE", "LIMITED", "MODERATE", "EXTENSIVE"]),
+  riskTolerance: z.enum(["CONSERVATIVE", "MODERATE", "AGGRESSIVE"]),
+  investmentObjective: z.enum(["PRESERVATION", "INCOME", "GROWTH", "SPECULATION"]),
+  investmentHorizon: z.enum(["SHORT", "MEDIUM", "LONG"]),
+  liquidityNeeds: z.enum(["HIGH", "MEDIUM", "LOW"]),
+})
+
+export const declarationsSchema = z.object({
+  accuracyConfirmation: z.literal(true, { errorMap: () => ({ message: "Must confirm accuracy" }) }),
+  privacyConsent: z.literal(true),
+  termsAcceptance: z.literal(true),
+  electronicSignature: z.string().min(2, "Signature required"),
+  signatureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+})
+
+export const kycAnswersSchema = z.object({
+  identity: identityStepSchema,
+  tax: taxStepSchema,
+  sourceOfFunds: sourceOfFundsSchema,
+  suitability: suitabilitySchema,
+  declarations: declarationsSchema,
+  address: addressSchema,
+})
+
+export type KycAnswers = z.infer<typeof kycAnswersSchema>
+```
+
+### Server Infrastructure
+
+**/apps/web/src/server/db.ts**
+```ts
+import { PrismaClient } from "@prisma/client"
+import { env } from "~/lib/env"
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const db =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  })
+
+if (env.NODE_ENV !== "production") globalForPrisma.prisma = db
+```
+
+**/apps/web/src/server/auth.ts**
+```ts
+import { type NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
+import bcrypt from "bcryptjs"
+import { db } from "./db"
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        const user = await db.user.findUnique({
+          where: { email: credentials.email },
+          include: { firm: true },
+        })
+
+        if (!user) {
+          return null
+        }
+
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.passwordHash
+        )
+
+        if (!isValid) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          firmId: user.firmId,
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = user.role
+        token.firmId = user.firmId
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string
+        session.user.role = token.role as string
+        session.user.firmId = token.firmId as string
+      }
+      return session
+    },
+  },
+  pages: {
+    signIn: "/signin",
+  },
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+}
+```
+
+**/apps/web/src/server/rbac.ts**
+```ts
+import { type UserRole } from "@prisma/client"
+
+type Permission =
+  | "firm:manage"
+  | "users:manage"
+  | "users:invite"
+  | "clients:create"
+  | "clients:view"
+  | "clients:edit"
+  | "kyc:create"
+  | "kyc:view"
+  | "kyc:edit"
+  | "kyc:review"
+  | "kyc:approve"
+  | "documents:upload"
+  | "documents:view"
+  | "audit:view"
+
+const rolePermissions: Record<UserRole, Permission[]> = {
+  SUPERADMIN: [
+    "firm:manage",
+    "users:manage",
+    "users:invite",
+    "clients:create",
+    "clients:view",
+    "clients:edit",
+    "kyc:create",
+    "kyc:view",
+    "kyc:edit",
+    "kyc:review",
+    "kyc:approve",
+    "documents:upload",
+    "documents:view",
+    "audit:view",
+  ],
+  ADMIN: [
+    "users:invite",
+    "clients:create",
+    "clients:view",
+    "clients:edit",
+    "kyc:create",
+    "kyc:view",
+    "kyc:edit",
+    "kyc:review",
+    "kyc:approve",
+    "documents:upload",
+    "documents:view",
+    "audit:view",
+  ],
+  COMPLIANCE: [
+    "clients:view",
+    "kyc:view",
+    "kyc:review",
+    "kyc:approve",
+    "documents:view",
+    "audit:view",
+  ],
+  USER: [
+    "clients:view",
+    "kyc:view",
+    "kyc:create",
+    "kyc:edit",
+    "documents:view",
+    "documents:upload",
+  ],
+}
+
+export function hasPermission(role: UserRole, permission: Permission): boolean {
+  return rolePermissions[role]?.includes(permission) ?? false
+}
+
+export function requirePermission(role: UserRole, permission: Permission): void {
+  if (!hasPermission(role, permission)) {
+    throw new Error(`Insufficient permissions: ${permission} required`)
+  }
+}
+```
+
+**/apps
