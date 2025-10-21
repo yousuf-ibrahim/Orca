@@ -4,10 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ArrowLeft, Edit, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Client, KycApplication, Document } from "@shared/schema";
+import { RmKycNotesForm } from "@/components/RmKycNotesForm";
+import { WealthInformationForm } from "@/components/WealthInformationForm";
+import { RiskAssessmentForm } from "@/components/RiskAssessmentForm";
+import { SuitabilityAssessmentForm } from "@/components/SuitabilityAssessmentForm";
+import { ClientClassificationForm } from "@/components/ClientClassificationForm";
 
 export default function ClientDetail() {
   const [match, params] = useRoute("/client/:id");
@@ -182,129 +188,162 @@ export default function ClientDetail() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <span className="text-sm text-muted-foreground">Full Name</span>
-              <p className="font-medium">{client.name}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Email Address</span>
-              <p className="font-medium">{client.email}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Phone Number</span>
-              <p className="font-medium">{client.phone || "—"}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Client Type</span>
-              <p className="font-medium">{client.type}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="rm-notes" data-testid="tab-rm-notes">RM Notes</TabsTrigger>
+          <TabsTrigger value="wealth" data-testid="tab-wealth">Wealth</TabsTrigger>
+          <TabsTrigger value="risk" data-testid="tab-risk">Risk</TabsTrigger>
+          <TabsTrigger value="suitability" data-testid="tab-suitability">Suitability</TabsTrigger>
+          <TabsTrigger value="classification" data-testid="tab-classification">Classification</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Compliance Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <span className="text-sm text-muted-foreground">KYC Status</span>
-              <div className="mt-1">
-                <StatusBadge status={kycStatus} type="kyc" />
-              </div>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Risk Assessment</span>
-              <div className="mt-1">
-                <StatusBadge status={riskBand} type="risk" />
-              </div>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Risk Score</span>
-              <p className="font-medium">{client.riskScore || "Pending"}</p>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">Submitted Date</span>
-              <p className="font-medium">{new Date(client.createdAt).toLocaleDateString()}</p>
-            </div>
-            {kycApp?.reviewedAt && (
-              <div>
-                <span className="text-sm text-muted-foreground">Review Date</span>
-                <p className="font-medium">{new Date(kycApp.reviewedAt).toLocaleDateString()}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="overview" className="space-y-6 mt-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <span className="text-sm text-muted-foreground">Full Name</span>
+                  <p className="font-medium">{client.name}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Email Address</span>
+                  <p className="font-medium">{client.email}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Phone Number</span>
+                  <p className="font-medium">{client.phone || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Client Type</span>
+                  <p className="font-medium">{client.type}</p>
+                </div>
+              </CardContent>
+            </Card>
 
-      {documents && documents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Documents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
-                  data-testid={`document-${doc.id}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="font-medium">{doc.filename}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {doc.type} • {(doc.filesize / 1024).toFixed(0)} KB • 
-                        {" "}{new Date(doc.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {doc.verified ? (
-                      <Badge variant="default">Verified</Badge>
-                    ) : (
-                      <Badge variant="secondary">Pending</Badge>
-                    )}
-                    <Button size="icon" variant="ghost" data-testid={`button-download-${doc.id}`}>
-                      <Download className="h-4 w-4" />
-                    </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle>Compliance Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <span className="text-sm text-muted-foreground">KYC Status</span>
+                  <div className="mt-1">
+                    <StatusBadge status={kycStatus} type="kyc" />
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <div>
+                  <span className="text-sm text-muted-foreground">Risk Assessment</span>
+                  <div className="mt-1">
+                    <StatusBadge status={riskBand} type="risk" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Risk Score</span>
+                  <p className="font-medium">{client.riskScore || "Pending"}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Submitted Date</span>
+                  <p className="font-medium">{new Date(client.createdAt).toLocaleDateString()}</p>
+                </div>
+                {kycApp?.reviewedAt && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Review Date</span>
+                    <p className="font-medium">{new Date(kycApp.reviewedAt).toLocaleDateString()}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-      {kycApp && kycApp.status === "submitted" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Review Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex gap-3">
-            <Button 
-              onClick={() => approveKycMutation.mutate()}
-              disabled={approveKycMutation.isPending}
-              data-testid="button-approve"
-            >
-              {approveKycMutation.isPending ? "Approving..." : "Approve Application"}
-            </Button>
-            <Button 
-              variant="destructive"
-              onClick={() => rejectKycMutation.mutate()}
-              disabled={rejectKycMutation.isPending}
-              data-testid="button-reject"
-            >
-              {rejectKycMutation.isPending ? "Rejecting..." : "Request Updates"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+          {documents && documents.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Documents</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
+                      data-testid={`document-${doc.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-medium">{doc.filename}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {doc.type} • {(doc.filesize / 1024).toFixed(0)} KB • 
+                            {" "}{new Date(doc.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {doc.verified ? (
+                          <Badge variant="default">Verified</Badge>
+                        ) : (
+                          <Badge variant="secondary">Pending</Badge>
+                        )}
+                        <Button size="icon" variant="ghost" data-testid={`button-download-${doc.id}`}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {kycApp && kycApp.status === "submitted" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Review Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="flex gap-3">
+                <Button 
+                  onClick={() => approveKycMutation.mutate()}
+                  disabled={approveKycMutation.isPending}
+                  data-testid="button-approve"
+                >
+                  {approveKycMutation.isPending ? "Approving..." : "Approve Application"}
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => rejectKycMutation.mutate()}
+                  disabled={rejectKycMutation.isPending}
+                  data-testid="button-reject"
+                >
+                  {rejectKycMutation.isPending ? "Rejecting..." : "Request Updates"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="rm-notes" className="mt-6">
+          <RmKycNotesForm clientId={clientId} />
+        </TabsContent>
+
+        <TabsContent value="wealth" className="mt-6">
+          <WealthInformationForm clientId={clientId} />
+        </TabsContent>
+
+        <TabsContent value="risk" className="mt-6">
+          <RiskAssessmentForm clientId={clientId} />
+        </TabsContent>
+
+        <TabsContent value="suitability" className="mt-6">
+          <SuitabilityAssessmentForm clientId={clientId} />
+        </TabsContent>
+
+        <TabsContent value="classification" className="mt-6">
+          <ClientClassificationForm clientId={clientId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
