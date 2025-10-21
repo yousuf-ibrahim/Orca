@@ -10,6 +10,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import Dashboard from "@/pages/Dashboard";
 import NewKYC from "@/pages/NewKYC";
 import ClientDetail from "@/pages/ClientDetail";
+import Portfolios from "@/pages/Portfolios";
+import PortfolioDetail from "@/pages/PortfolioDetail";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 
@@ -20,6 +22,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/kyc/new" component={NewKYC} />
       <Route path="/client/:id" component={ClientDetail} />
+      <Route path="/portfolios" component={Portfolios} />
+      <Route path="/portfolios/:id" component={PortfolioDetail} />
       <Route component={NotFound} />
     </Switch>
   );

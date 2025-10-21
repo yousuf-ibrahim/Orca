@@ -2,7 +2,12 @@
 
 ## Overview
 
-Orca is an enterprise-grade financial operations platform for small investment firms, focusing on KYC (Know Your Customer) and client onboarding. It provides compliance officers and financial professionals with tools for client verification, risk assessment, and regulatory documentation through a streamlined, data-intensive interface. The platform's core purpose is to enable efficient client onboarding while ensuring compliance with financial regulations via structured KYC processes, risk band classification, and document management.
+Orca is an enterprise-grade financial operations platform for small investment firms, focusing on two core capabilities:
+
+1. **KYC & Compliance**: Client onboarding, verification, risk assessment, and regulatory documentation with structured workflows
+2. **Portfolio Monitoring**: Bloomberg-linked securities master, multi-custodian portfolio tracking, asset allocation analysis, and position-level P&L monitoring
+
+The platform enables efficient client onboarding and ongoing portfolio surveillance for hedge funds and asset managers, positioning as "the Addepar for small hedge funds" - enterprise infrastructure for boutique firms.
 
 ## User Preferences
 
@@ -18,11 +23,25 @@ The frontend uses React with TypeScript and Vite, built with shadcn/ui component
 
 ### Backend Architecture
 
-The backend is an Express.js server with TypeScript, structured as an ESM application. It implements a RESTful API, supporting core workflows like client and KYC application management, documents, and dashboard statistics, alongside comprehensive KYC workflows for wealth information, beneficial ownership, risk assessments, suitability assessments, client classification, RM notes, client approvals, and transaction monitoring. Key features include Zod schema validation, audit logging for all operations, and auto-updates for risk scores. The storage layer uses PostgreSQL via Drizzle ORM and Neon serverless, providing full CRUD operations for 14 tables with multi-tenant isolation. The database schema includes core tables for firms, users, clients, KYC applications, documents, and audit logs, plus additional tables for detailed KYC workflows. All entities are scoped by `firmId` for multi-tenancy.
+The backend is an Express.js server with TypeScript, structured as an ESM application. It implements a RESTful API supporting two major domains:
+
+**KYC & Compliance Domain**: Client and KYC application management, documents, dashboard statistics, wealth information, beneficial ownership, risk assessments, suitability assessments, client classification, RM notes, client approvals, and transaction monitoring.
+
+**Portfolio Monitoring Domain**: Securities master management, custodian management, portfolio lifecycle, and position tracking. Securities master includes Bloomberg identifiers (ISIN, CUSIP, ticker, Bloomberg ID, SEDOL), fixed income analytics (maturity, coupon, duration, credit rating), and risk metrics (PRR, beta). Portfolio system supports multi-custodian portfolios with real-time P&L tracking, asset allocation analysis, leverage metrics, and position-level holdings.
+
+Key features include Zod schema validation, audit logging for all operations, and auto-calculated metrics. The storage layer uses PostgreSQL via Drizzle ORM and Neon serverless, providing full CRUD operations for 18+ tables with multi-tenant isolation. All entities are scoped by `firmId` for multi-tenancy.
 
 ### Data Model & Business Logic
 
-The platform supports various KYC workflow states (DRAFT, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, REQUIRES_UPDATE) and risk classifications (LOW, MEDIUM, HIGH). Client data includes personal, compliance, and risk information. KYC applications track submissions, status, and review details. Document management includes metadata, storage references, and verification status.
+**KYC Domain**: The platform supports various KYC workflow states (DRAFT, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, REQUIRES_UPDATE) and risk classifications (LOW, MEDIUM, HIGH). Client data includes personal, compliance, and risk information. KYC applications track submissions, status, and review details. Document management includes metadata, storage references, and verification status.
+
+**Portfolio Monitoring Domain**: 
+- **Securities Master**: Central repository for all securities with multi-identifier support (ticker, ISIN, CUSIP, SEDOL, Bloomberg ID), asset class categorization (cash, fixed_income, equity, alternatives, structured_products), issuer information, and pricing data
+- **Custodians**: Prime brokers, banks, and clearing firms with integration endpoints for live data feeds
+- **Portfolios**: Client investment accounts with risk profiles, investment objectives, consolidated metrics (total market value, P&L, leverage ratios), and multi-custodian support
+- **Positions**: Security-level holdings across custodians with quantity, cost basis, current price, market value, unrealized/realized P&L, allocation percentages, and income tracking
+
+**Bloomberg Integration Readiness**: Securities master designed for Bloomberg Server API (SAPI) and EMSX API integration, with full support for Bloomberg identifiers and reference data fields.
 
 ## External Dependencies
 

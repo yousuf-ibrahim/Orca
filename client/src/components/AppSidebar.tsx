@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Settings, Building2 } from "lucide-react";
+import { Home, Users, FileText, Settings, Building2, Wallet } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,9 +15,8 @@ import { useLocation } from "wouter";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Clients", url: "/clients", icon: Users },
-  { title: "KYC Applications", url: "/kyc", icon: FileText },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Portfolios", url: "/portfolios", icon: Wallet },
+  { title: "KYC", url: "/kyc/new", icon: FileText },
 ];
 
 interface AppSidebarProps {

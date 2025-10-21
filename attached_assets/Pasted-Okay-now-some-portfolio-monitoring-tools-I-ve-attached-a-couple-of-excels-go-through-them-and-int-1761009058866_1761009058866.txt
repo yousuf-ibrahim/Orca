@@ -1,0 +1,17 @@
+Okay, now some portfolio monitoring tools, I've attached a couple of excels, go through them and integrate them so i can view the various portfolios, this data will eventually be linked to their respective custodians, the excels also have drop downs for different options so see if you can view those and also keep those for context. This is meant to be a tool for all asset managers but specifically small hedge funds, these investment sheets are more from wealth management funds so open to your improvements on making them better for hedge funds as well, but look at how the IC sheet is segmented, and then lets also give the user the abilitly to natively open a window into each custodian within each clients portfolio to directly view holdings, there are also larger lists which are different views for monitoring different types of portfolios, these will also likely be used in congruence with bloomberg so maybe lets offer integrations? or keep those in mind? or just things that might be helppful, ive attached a shortcuts list. More general background wise these seem to be the popular technologies, the more of these we can integrate or do natively the better Tech Stack Insights from Real Hedge Fund Infrastructure
+Database/Data Platform Standard Stack:
+
+Databricks or Snowflake as the core data warehouse (industry standard)
+Azure, AWS, or GCP for cloud infrastructure
+Security master, issuer master, position master, transaction master, pricing master - these are the core data models you MUST build
+
+Integration Ecosystem (what you'll be competing against/integrating with):
+
+Fund Admins: Morgan Stanley Fund Services, HedgeServ
+OMS Systems: FluxTrade, Infusion, Bloomberg AIM, Charles River
+PMS/Shadow NAV: FIS VPM, Infusion, Arcesium
+Research Data: Visible Alpha, FactSet, Daloopa
+Internal Tools: Outlook, SharePoint, Excel (ubiquitous)
+
+Auto-generate UI based on different data sources
+MCP (Model Context Protocol) servers for direct data access (Daloopa + Anthropic partnership e.g)

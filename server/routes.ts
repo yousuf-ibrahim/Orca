@@ -12,7 +12,11 @@ import {
   insertClientClassificationSchema,
   insertRmKycNoteSchema,
   insertClientApprovalSchema,
-  insertTransactionMonitoringSchema
+  insertTransactionMonitoringSchema,
+  insertSecuritiesMasterSchema,
+  insertCustodianSchema,
+  insertPortfolioSchema,
+  insertPositionSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -806,6 +810,353 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating transaction monitoring:", error);
       res.status(500).json({ error: "Failed to create transaction monitoring" });
+    }
+  });
+
+  // ============================================
+  // PORTFOLIO MONITORING ROUTES
+  // ============================================
+
+  // Securities Master
+  app.get("/api/securities", async (req: Request, res: Response) => {
+    try {
+      const securities = await storage.getSecurities(FIRM_ID);
+      res.json(securities);
+    } catch (error) {
+      console.error("Error fetching securities:", error);
+      res.status(500).json({ error: "Failed to fetch securities" });
+    }
+  });
+
+  app.get("/api/securities/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const security = await storage.getSecurity(id, FIRM_ID);
+      if (!security) {
+        return res.status(404).json({ error: "Security not found" });
+      }
+      res.json(security);
+    } catch (error) {
+      console.error("Error fetching security:", error);
+      res.status(500).json({ error: "Failed to fetch security" });
+    }
+  });
+
+  app.post("/api/securities", async (req: Request, res: Response) => {
+    try {
+      const data = insertSecuritiesMasterSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const security = await storage.createSecurity(data);
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "security",
+        entityId: security.id,
+        action: "create",
+        changes: { ticker: data.ticker, securityName: data.securityName },
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(security);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating security:", error);
+      res.status(500).json({ error: "Failed to create security" });
+    }
+  });
+
+  app.patch("/api/securities/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const security = await storage.updateSecurity(id, FIRM_ID, req.body);
+      if (!security) {
+        return res.status(404).json({ error: "Security not found" });
+      }
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "security",
+        entityId: security.id,
+        action: "update",
+        changes: req.body,
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(security);
+    } catch (error) {
+      console.error("Error updating security:", error);
+      res.status(500).json({ error: "Failed to update security" });
+    }
+  });
+
+  // Custodians
+  app.get("/api/custodians", async (req: Request, res: Response) => {
+    try {
+      const custodians = await storage.getCustodians(FIRM_ID);
+      res.json(custodians);
+    } catch (error) {
+      console.error("Error fetching custodians:", error);
+      res.status(500).json({ error: "Failed to fetch custodians" });
+    }
+  });
+
+  app.get("/api/custodians/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const custodian = await storage.getCustodian(id, FIRM_ID);
+      if (!custodian) {
+        return res.status(404).json({ error: "Custodian not found" });
+      }
+      res.json(custodian);
+    } catch (error) {
+      console.error("Error fetching custodian:", error);
+      res.status(500).json({ error: "Failed to fetch custodian" });
+    }
+  });
+
+  app.post("/api/custodians", async (req: Request, res: Response) => {
+    try {
+      const data = insertCustodianSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const custodian = await storage.createCustodian(data);
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "custodian",
+        entityId: custodian.id,
+        action: "create",
+        changes: { name: data.name },
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(custodian);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating custodian:", error);
+      res.status(500).json({ error: "Failed to create custodian" });
+    }
+  });
+
+  app.patch("/api/custodians/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const custodian = await storage.updateCustodian(id, FIRM_ID, req.body);
+      if (!custodian) {
+        return res.status(404).json({ error: "Custodian not found" });
+      }
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "custodian",
+        entityId: custodian.id,
+        action: "update",
+        changes: req.body,
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(custodian);
+    } catch (error) {
+      console.error("Error updating custodian:", error);
+      res.status(500).json({ error: "Failed to update custodian" });
+    }
+  });
+
+  // Portfolios
+  app.get("/api/portfolios", async (req: Request, res: Response) => {
+    try {
+      const portfolios = await storage.getPortfolios(FIRM_ID);
+      res.json(portfolios);
+    } catch (error) {
+      console.error("Error fetching portfolios:", error);
+      res.status(500).json({ error: "Failed to fetch portfolios" });
+    }
+  });
+
+  app.get("/api/portfolios/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const portfolio = await storage.getPortfolio(id, FIRM_ID);
+      if (!portfolio) {
+        return res.status(404).json({ error: "Portfolio not found" });
+      }
+      res.json(portfolio);
+    } catch (error) {
+      console.error("Error fetching portfolio:", error);
+      res.status(500).json({ error: "Failed to fetch portfolio" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/portfolios", async (req: Request, res: Response) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const portfolios = await storage.getPortfoliosByClient(clientId, FIRM_ID);
+      res.json(portfolios);
+    } catch (error) {
+      console.error("Error fetching client portfolios:", error);
+      res.status(500).json({ error: "Failed to fetch client portfolios" });
+    }
+  });
+
+  app.post("/api/portfolios", async (req: Request, res: Response) => {
+    try {
+      const data = insertPortfolioSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const portfolio = await storage.createPortfolio(data);
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "portfolio",
+        entityId: portfolio.id,
+        action: "create",
+        changes: { portfolioName: data.portfolioName, clientId: data.clientId },
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(portfolio);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating portfolio:", error);
+      res.status(500).json({ error: "Failed to create portfolio" });
+    }
+  });
+
+  app.patch("/api/portfolios/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const portfolio = await storage.updatePortfolio(id, FIRM_ID, req.body);
+      if (!portfolio) {
+        return res.status(404).json({ error: "Portfolio not found" });
+      }
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "portfolio",
+        entityId: portfolio.id,
+        action: "update",
+        changes: req.body,
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(portfolio);
+    } catch (error) {
+      console.error("Error updating portfolio:", error);
+      res.status(500).json({ error: "Failed to update portfolio" });
+    }
+  });
+
+  // Positions
+  app.get("/api/portfolios/:portfolioId/positions", async (req: Request, res: Response) => {
+    try {
+      const portfolioId = parseInt(req.params.portfolioId);
+      const positions = await storage.getPositions(portfolioId, FIRM_ID);
+      res.json(positions);
+    } catch (error) {
+      console.error("Error fetching positions:", error);
+      res.status(500).json({ error: "Failed to fetch positions" });
+    }
+  });
+
+  app.get("/api/positions/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const position = await storage.getPosition(id, FIRM_ID);
+      if (!position) {
+        return res.status(404).json({ error: "Position not found" });
+      }
+      res.json(position);
+    } catch (error) {
+      console.error("Error fetching position:", error);
+      res.status(500).json({ error: "Failed to fetch position" });
+    }
+  });
+
+  app.post("/api/positions", async (req: Request, res: Response) => {
+    try {
+      const data = insertPositionSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const position = await storage.createPosition(data);
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "position",
+        entityId: position.id,
+        action: "create",
+        changes: { portfolioId: data.portfolioId, securityId: data.securityId, quantity: data.quantity },
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(position);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating position:", error);
+      res.status(500).json({ error: "Failed to create position" });
+    }
+  });
+
+  app.patch("/api/positions/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const position = await storage.updatePosition(id, FIRM_ID, req.body);
+      if (!position) {
+        return res.status(404).json({ error: "Position not found" });
+      }
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "position",
+        entityId: position.id,
+        action: "update",
+        changes: req.body,
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json(position);
+    } catch (error) {
+      console.error("Error updating position:", error);
+      res.status(500).json({ error: "Failed to update position" });
+    }
+  });
+
+  app.delete("/api/positions/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePosition(id, FIRM_ID);
+      
+      await storage.createAuditLog({
+        firmId: FIRM_ID,
+        userId: null,
+        entityType: "position",
+        entityId: id,
+        action: "delete",
+        changes: {},
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting position:", error);
+      res.status(500).json({ error: "Failed to delete position" });
     }
   });
 

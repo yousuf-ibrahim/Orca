@@ -12,6 +12,10 @@ import {
   rmKycNotes,
   clientApprovals,
   transactionMonitoring,
+  securitiesMaster,
+  custodians,
+  portfolios,
+  positions,
   type Client,
   type InsertClient,
   type KycApplication,
@@ -35,7 +39,15 @@ import {
   type ClientApproval,
   type InsertClientApproval,
   type TransactionMonitoring,
-  type InsertTransactionMonitoring
+  type InsertTransactionMonitoring,
+  type SecurityMaster,
+  type InsertSecurityMaster,
+  type Custodian,
+  type InsertCustodian,
+  type Portfolio,
+  type InsertPortfolio,
+  type Position,
+  type InsertPosition
 } from "@shared/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -108,6 +120,32 @@ export interface IStorage {
   // Transaction Monitoring
   getTransactionMonitoring(clientId: number, firmId: number): Promise<TransactionMonitoring[]>;
   createTransactionMonitoring(data: InsertTransactionMonitoring): Promise<TransactionMonitoring>;
+  
+  // Securities Master
+  getSecurities(firmId: number): Promise<SecurityMaster[]>;
+  getSecurity(id: number, firmId: number): Promise<SecurityMaster | undefined>;
+  createSecurity(data: InsertSecurityMaster): Promise<SecurityMaster>;
+  updateSecurity(id: number, firmId: number, data: Partial<InsertSecurityMaster>): Promise<SecurityMaster | undefined>;
+  
+  // Custodians
+  getCustodians(firmId: number): Promise<Custodian[]>;
+  getCustodian(id: number, firmId: number): Promise<Custodian | undefined>;
+  createCustodian(data: InsertCustodian): Promise<Custodian>;
+  updateCustodian(id: number, firmId: number, data: Partial<InsertCustodian>): Promise<Custodian | undefined>;
+  
+  // Portfolios
+  getPortfolios(firmId: number): Promise<Portfolio[]>;
+  getPortfolio(id: number, firmId: number): Promise<Portfolio | undefined>;
+  getPortfoliosByClient(clientId: number, firmId: number): Promise<Portfolio[]>;
+  createPortfolio(data: InsertPortfolio): Promise<Portfolio>;
+  updatePortfolio(id: number, firmId: number, data: Partial<InsertPortfolio>): Promise<Portfolio | undefined>;
+  
+  // Positions
+  getPositions(portfolioId: number, firmId: number): Promise<Position[]>;
+  getPosition(id: number, firmId: number): Promise<Position | undefined>;
+  createPosition(data: InsertPosition): Promise<Position>;
+  updatePosition(id: number, firmId: number, data: Partial<InsertPosition>): Promise<Position | undefined>;
+  deletePosition(id: number, firmId: number): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -388,6 +426,120 @@ export class DbStorage implements IStorage {
   async createTransactionMonitoring(data: InsertTransactionMonitoring): Promise<TransactionMonitoring> {
     const result = await db.insert(transactionMonitoring).values(data).returning();
     return result[0];
+  }
+
+  // Securities Master
+  async getSecurities(firmId: number): Promise<SecurityMaster[]> {
+    return db.select().from(securitiesMaster).where(eq(securitiesMaster.firmId, firmId)).orderBy(desc(securitiesMaster.createdAt));
+  }
+
+  async getSecurity(id: number, firmId: number): Promise<SecurityMaster | undefined> {
+    const result = await db.select().from(securitiesMaster).where(
+      and(eq(securitiesMaster.id, id), eq(securitiesMaster.firmId, firmId))
+    );
+    return result[0];
+  }
+
+  async createSecurity(data: InsertSecurityMaster): Promise<SecurityMaster> {
+    const result = await db.insert(securitiesMaster).values(data).returning();
+    return result[0];
+  }
+
+  async updateSecurity(id: number, firmId: number, data: Partial<InsertSecurityMaster>): Promise<SecurityMaster | undefined> {
+    const result = await db.update(securitiesMaster)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(securitiesMaster.id, id), eq(securitiesMaster.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Custodians
+  async getCustodians(firmId: number): Promise<Custodian[]> {
+    return db.select().from(custodians).where(eq(custodians.firmId, firmId)).orderBy(desc(custodians.createdAt));
+  }
+
+  async getCustodian(id: number, firmId: number): Promise<Custodian | undefined> {
+    const result = await db.select().from(custodians).where(
+      and(eq(custodians.id, id), eq(custodians.firmId, firmId))
+    );
+    return result[0];
+  }
+
+  async createCustodian(data: InsertCustodian): Promise<Custodian> {
+    const result = await db.insert(custodians).values(data).returning();
+    return result[0];
+  }
+
+  async updateCustodian(id: number, firmId: number, data: Partial<InsertCustodian>): Promise<Custodian | undefined> {
+    const result = await db.update(custodians)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(custodians.id, id), eq(custodians.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Portfolios
+  async getPortfolios(firmId: number): Promise<Portfolio[]> {
+    return db.select().from(portfolios).where(eq(portfolios.firmId, firmId)).orderBy(desc(portfolios.createdAt));
+  }
+
+  async getPortfolio(id: number, firmId: number): Promise<Portfolio | undefined> {
+    const result = await db.select().from(portfolios).where(
+      and(eq(portfolios.id, id), eq(portfolios.firmId, firmId))
+    );
+    return result[0];
+  }
+
+  async getPortfoliosByClient(clientId: number, firmId: number): Promise<Portfolio[]> {
+    return db.select().from(portfolios).where(
+      and(eq(portfolios.clientId, clientId), eq(portfolios.firmId, firmId))
+    ).orderBy(desc(portfolios.createdAt));
+  }
+
+  async createPortfolio(data: InsertPortfolio): Promise<Portfolio> {
+    const result = await db.insert(portfolios).values(data).returning();
+    return result[0];
+  }
+
+  async updatePortfolio(id: number, firmId: number, data: Partial<InsertPortfolio>): Promise<Portfolio | undefined> {
+    const result = await db.update(portfolios)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(portfolios.id, id), eq(portfolios.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Positions
+  async getPositions(portfolioId: number, firmId: number): Promise<Position[]> {
+    return db.select().from(positions).where(
+      and(eq(positions.portfolioId, portfolioId), eq(positions.firmId, firmId))
+    ).orderBy(desc(positions.positionDate));
+  }
+
+  async getPosition(id: number, firmId: number): Promise<Position | undefined> {
+    const result = await db.select().from(positions).where(
+      and(eq(positions.id, id), eq(positions.firmId, firmId))
+    );
+    return result[0];
+  }
+
+  async createPosition(data: InsertPosition): Promise<Position> {
+    const result = await db.insert(positions).values(data).returning();
+    return result[0];
+  }
+
+  async updatePosition(id: number, firmId: number, data: Partial<InsertPosition>): Promise<Position | undefined> {
+    const result = await db.update(positions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(positions.id, id), eq(positions.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  async deletePosition(id: number, firmId: number): Promise<void> {
+    await db.delete(positions).where(
+      and(eq(positions.id, id), eq(positions.firmId, firmId))
+    );
   }
 }
 

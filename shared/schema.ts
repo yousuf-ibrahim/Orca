@@ -487,3 +487,185 @@ export const insertTransactionMonitoringSchema = createInsertSchema(transactionM
 });
 export type InsertTransactionMonitoring = z.infer<typeof insertTransactionMonitoringSchema>;
 export type TransactionMonitoring = typeof transactionMonitoring.$inferSelect;
+
+// ============================================
+// PORTFOLIO MONITORING SYSTEM
+// ============================================
+
+// Securities Master (Bloomberg-linked reference data)
+export const securitiesMaster = pgTable("securities_master", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  
+  // Identifiers (for cross-system linking)
+  ticker: text("ticker"),
+  isin: text("isin").unique(),
+  cusip: text("cusip"),
+  sedol: text("sedol"),
+  bloombergId: text("bloomberg_id"),
+  reutersRic: text("reuters_ric"),
+  
+  // Security core information
+  securityName: text("security_name").notNull(),
+  assetClass: text("asset_class").notNull(), // cash, fixed_income, equity, alternatives, structured_products, fx_commodities, swaps
+  securityType: text("security_type"), // bond, stock, etf, fund, option, future, etc.
+  productCategory: text("product_category"), // fiduciary_deposits, us_treasuries, single_line_equity, hedge_funds, etc.
+  
+  // Issuer information
+  issuerName: text("issuer_name"),
+  issuerCountry: text("issuer_country"),
+  issuerSector: text("issuer_sector"),
+  
+  // Market data
+  currency: text("currency").notNull().default("USD"),
+  exchange: text("exchange"),
+  country: text("country"),
+  
+  // Fixed income specific
+  maturityDate: date("maturity_date"),
+  couponRate: decimal("coupon_rate", { precision: 10, scale: 4 }),
+  yieldToMaturity: decimal("yield_to_maturity", { precision: 10, scale: 4 }),
+  duration: decimal("duration", { precision: 10, scale: 2 }),
+  creditRating: text("credit_rating"), // AAA, AA, A, BBB, etc.
+  
+  // Risk metrics
+  prr: integer("prr"), // Product Risk Rating 1-5
+  beta: decimal("beta", { precision: 10, scale: 4 }),
+  
+  // Pricing
+  lastPrice: decimal("last_price", { precision: 20, scale: 6 }),
+  priceDate: date("price_date"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSecuritiesMasterSchema = createInsertSchema(securitiesMaster).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSecurityMaster = z.infer<typeof insertSecuritiesMasterSchema>;
+export type SecurityMaster = typeof securitiesMaster.$inferSelect;
+
+// Custodians
+export const custodians = pgTable("custodians", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  
+  name: text("name").notNull(), // LGT Geneva, Credit Suisse, etc.
+  shortName: text("short_name"), // LGT, CS, etc.
+  custodianType: text("custodian_type"), // bank, prime_broker, clearing_firm
+  
+  // Contact information
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  
+  // Integration details
+  apiEndpoint: text("api_endpoint"),
+  ftpHost: text("ftp_host"),
+  
+  // Status
+  status: text("status").notNull().default("active"), // active, inactive
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCustodianSchema = createInsertSchema(custodians).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertCustodian = z.infer<typeof insertCustodianSchema>;
+export type Custodian = typeof custodians.$inferSelect;
+
+// Portfolios (Client portfolios - can have multiple custodians)
+export const portfolios = pgTable("portfolios", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  
+  portfolioName: text("portfolio_name").notNull(),
+  accountNumber: text("account_number"), // Primary account number
+  
+  // Investment profile
+  investmentRiskProfile: text("investment_risk_profile"), // conservative, moderately_conservative, moderate, moderately_aggressive, aggressive
+  investmentObjective: text("investment_objective"), // capital_preservation, income, growth, capital_growth, aggressive_growth
+  
+  // Benchmarks
+  benchmarkIndex: text("benchmark_index"),
+  
+  // Portfolio metrics (updated daily/real-time)
+  totalMarketValue: decimal("total_market_value", { precision: 20, scale: 2 }),
+  totalCostBasis: decimal("total_cost_basis", { precision: 20, scale: 2 }),
+  totalUnrealizedPnl: decimal("total_unrealized_pnl", { precision: 20, scale: 2 }),
+  totalRealizedPnl: decimal("total_realized_pnl", { precision: 20, scale: 2 }),
+  
+  // Leverage metrics
+  grossAssets: decimal("gross_assets", { precision: 20, scale: 2 }),
+  totalLiabilities: decimal("total_liabilities", { precision: 20, scale: 2 }),
+  netAssets: decimal("net_assets", { precision: 20, scale: 2 }),
+  loanInterest: decimal("loan_interest", { precision: 10, scale: 4 }),
+  weightedAvgLendingRate: decimal("weighted_avg_lending_rate", { precision: 10, scale: 4 }),
+  
+  // Status
+  status: text("status").notNull().default("active"), // active, closed, suspended
+  
+  asOfDate: date("as_of_date"), // Portfolio valuation date
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPortfolioSchema = createInsertSchema(portfolios).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPortfolio = z.infer<typeof insertPortfolioSchema>;
+export type Portfolio = typeof portfolios.$inferSelect;
+
+// Positions (Holdings at security level across custodians)
+export const positions = pgTable("positions", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  portfolioId: integer("portfolio_id").notNull().references(() => portfolios.id),
+  custodianId: integer("custodian_id").notNull().references(() => custodians.id),
+  securityId: integer("security_id").notNull().references(() => securitiesMaster.id),
+  
+  // Position details
+  quantity: decimal("quantity", { precision: 20, scale: 6 }).notNull(),
+  averageCost: decimal("average_cost", { precision: 20, scale: 6 }),
+  costBasis: decimal("cost_basis", { precision: 20, scale: 2 }),
+  
+  // Market value
+  currentPrice: decimal("current_price", { precision: 20, scale: 6 }),
+  marketValue: decimal("market_value", { precision: 20, scale: 2 }),
+  
+  // P&L
+  unrealizedPnl: decimal("unrealized_pnl", { precision: 20, scale: 2 }),
+  realizedPnl: decimal("realized_pnl", { precision: 20, scale: 2 }),
+  
+  // Allocation
+  allocationPercent: decimal("allocation_percent", { precision: 10, scale: 4 }),
+  
+  // Income (for bonds/dividends)
+  annualCashflow: decimal("annual_cashflow", { precision: 20, scale: 2 }),
+  indicativeLtv: decimal("indicative_ltv", { precision: 10, scale: 4 }), // Loan-to-value
+  
+  // Position dates
+  positionDate: date("position_date").notNull(), // Snapshot date
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPositionSchema = createInsertSchema(positions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPosition = z.infer<typeof insertPositionSchema>;
+export type Position = typeof positions.$inferSelect;
