@@ -211,7 +211,7 @@ export default function Portfolios() {
           )}
 
           <WidgetContainer colSpan={6}>
-            <PortfolioNewsWidget />
+            <PortfolioNewsWidget portfolioIds={portfolioList.map(p => p.id)} />
           </WidgetContainer>
 
           <WidgetContainer colSpan={6}>
