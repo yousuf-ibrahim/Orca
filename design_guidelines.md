@@ -1,38 +1,39 @@
 # Design Guidelines for Orca Financial Operations Platform
 
-## Design Approach: Enterprise Data Application
+## Design Approach: Bloomberg Terminal for Hedge Funds
 
-**Selected Approach**: Design System - Carbon Design System principles adapted for shadcn/ui components
+**Selected Approach**: Bloomberg Terminal aesthetic with Addepar-style widget system
 
-**Rationale**: Orca is a data-intensive, compliance-focused B2B application requiring clarity, efficiency, and trust. Carbon Design System excels at enterprise dashboards with heavy data management needs.
+**Rationale**: Orca targets small hedge funds and asset managers who need enterprise-grade portfolio monitoring. The design combines Bloomberg's information density and real-time market data presentation with Addepar's professional widget-based dashboards.
 
 **Key Design Principles**:
-- Professional trustworthiness for financial services
-- Information density without overwhelm
-- Clear status communication and visual feedback
-- Consistent, predictable interaction patterns
+- **Information Density**: Bloomberg Terminal inspired - maximum data in minimal space
+- **Real-time Market Context**: Live market indices, sentiment indicators, and relevant news
+- **Professional Trust**: Dark theme (#19171f) with teal accent (#3ea6b6) for financial services
+- **Adjustable Widgets**: Addepar-style resizable widget grid for customizable dashboards
+- **Clear Visual Hierarchy**: Sparkline charts, sentiment bars, and color-coded performance metrics
 
 ---
 
 ## Core Design Elements
 
-### A. Color Palette
+### A. Color Palette (Bloomberg Terminal Inspired)
 
-**Light Mode**:
-- Primary Brand: 210 100% 45% (Professional blue - trust and finance)
-- Background: 0 0% 100% (Pure white for clarity)
-- Surface: 210 20% 98% (Subtle gray for cards/panels)
+**Primary Theme** (Dark Mode First):
+- Primary Accent: 183 51% 47% (#3ea6b6 - Teal, Bloomberg-style accent)
+- Background: 264 15% 11% (#19171f - Deep charcoal, terminal black)
+- Surface: 264 10% 15% (Elevated cards and widgets)
+- Border: 264 8% 25% (Subtle widget divisions)
+- Text Primary: 0 0% 98% (High contrast white)
+- Text Secondary: 0 0% 70% (Muted information)
+
+**Light Mode** (Optional):
+- Primary Brand: 183 51% 47% (Teal accent maintained)
+- Background: 0 0% 100% (Pure white)
+- Surface: 210 20% 98% (Subtle gray for cards)
 - Border: 214 20% 91% (Soft divisions)
 - Text Primary: 222 47% 11% (High contrast)
 - Text Secondary: 215 16% 47% (Supporting information)
-
-**Dark Mode**:
-- Primary Brand: 210 100% 55% (Slightly brighter for contrast)
-- Background: 222 47% 11% (Deep navy-gray)
-- Surface: 217 33% 17% (Elevated surfaces)
-- Border: 217 20% 25% (Subtle divisions)
-- Text Primary: 210 20% 98% (High contrast)
-- Text Secondary: 215 15% 70% (Supporting information)
 
 **Status Colors** (Both modes):
 - Success: 142 76% 36% (KYC approved, documents verified)
@@ -123,10 +124,15 @@ Use sparingly - only for feedback and transitions:
 
 ## Application-Specific Guidelines
 
-**Dashboard Layout**:
-- Stats overview cards at top (3-4 metrics: Total clients, Pending KYC, Recent submissions)
-- Filterable client table below with search, status filters, risk band filters
-- Quick actions: "New Client" button prominently placed
+**Dashboard Layout** (Widget-Based):
+- Market Indices Widget: Top row with S&P, NASDAQ, Dow, VIX showing sparkline charts and real-time changes
+- Market Sentiment Widget: Bullish/bearish indicator with visual sentiment bars (Perplexity-style)
+- Portfolio Stats Widget: Total AUM, Unrealized P&L, Portfolio count
+- Market Summary Widget: Portfolio-relevant news filtered by holdings
+- Equity Sectors Widget: Sector performance with color-coded gains/losses
+- Top Holdings Widget: Gainers/Losers tabs showing top movers
+- Resizable Widget Grid: Addepar-style 12-column grid allowing custom layouts
+- Portfolio Cards: Below widgets showing individual portfolio details
 
 **KYC Form Design**:
 - Multi-step process with clear progress (Steps: Personal Info → Business Info → Documents → Review)

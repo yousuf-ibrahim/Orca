@@ -4,8 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { Plus, TrendingUp, TrendingDown, Wallet, BarChart3, DollarSign } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import type { Portfolio } from "@shared/schema";
+import { MarketIndicesWidget } from "@/components/widgets/MarketIndicesWidget";
+import { MarketSentimentWidget } from "@/components/widgets/MarketSentimentWidget";
+import { PortfolioNewsWidget } from "@/components/widgets/PortfolioNewsWidget";
+import { EquitySectorsWidget } from "@/components/widgets/EquitySectorsWidget";
+import { TopMoversWidget } from "@/components/widgets/TopMoversWidget";
+import { PortfolioStatsWidget } from "@/components/widgets/PortfolioStatsWidget";
+import { WidgetGrid, WidgetContainer } from "@/components/widgets/WidgetGrid";
 
 function formatCurrency(value: string | number | null | undefined): string {
   if (!value) return "$0.00";
@@ -102,80 +109,33 @@ function PortfolioCard({ portfolio }: { portfolio: Portfolio }) {
 
 function PortfoliosSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {[1, 2, 3].map((i) => (
-        <Card key={i}>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-24 w-full" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function StatsOverview({ portfolios }: { portfolios: Portfolio[] }) {
-  const totalMarketValue = portfolios.reduce((sum, p) => sum + parseFloat(p.totalMarketValue || "0"), 0);
-  const totalUnrealizedPnl = portfolios.reduce((sum, p) => sum + parseFloat(p.totalUnrealizedPnl || "0"), 0);
-  const activeCount = portfolios.filter(p => p.status === "active").length;
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total AUM</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold" data-testid="text-total-aum">
-            {formatCurrency(totalMarketValue)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Across {activeCount} active {activeCount === 1 ? "portfolio" : "portfolios"}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Unrealized P&L</CardTitle>
-          {totalUnrealizedPnl >= 0 ? (
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          ) : (
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          )}
-        </CardHeader>
-        <CardContent>
-          <div 
-            className={`text-2xl font-bold ${totalUnrealizedPnl >= 0 ? "text-green-500" : "text-red-500"}`}
-            data-testid="text-total-pnl"
-          >
-            {formatCurrency(totalUnrealizedPnl)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {totalUnrealizedPnl >= 0 ? "Gain" : "Loss"} across all portfolios
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Portfolios</CardTitle>
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold" data-testid="text-portfolio-count">
-            {portfolios.length}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {activeCount} active, {portfolios.length - activeCount} inactive
-          </p>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Skeleton className="h-32 w-full" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-24 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
@@ -207,7 +167,7 @@ export default function Portfolios() {
             Portfolio Monitoring
           </h1>
           <p className="text-muted-foreground mt-1">
-            Track and analyze client portfolios across custodians
+            Track and analyze client portfolios with real-time market insights
           </p>
         </div>
         <Link href="/portfolios/new">
@@ -217,8 +177,6 @@ export default function Portfolios() {
           </Button>
         </Link>
       </div>
-
-      {portfolioList.length > 0 && <StatsOverview portfolios={portfolioList} />}
 
       {portfolioList.length === 0 ? (
         <Card className="text-center py-12">
@@ -237,11 +195,43 @@ export default function Portfolios() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {portfolioList.map((portfolio) => (
-            <PortfolioCard key={portfolio.id} portfolio={portfolio} />
-          ))}
-        </div>
+        <WidgetGrid>
+          <WidgetContainer colSpan={12}>
+            <MarketIndicesWidget />
+          </WidgetContainer>
+
+          <WidgetContainer colSpan={12}>
+            <MarketSentimentWidget />
+          </WidgetContainer>
+
+          {portfolioList.length > 0 && (
+            <WidgetContainer colSpan={12}>
+              <PortfolioStatsWidget portfolios={portfolioList} />
+            </WidgetContainer>
+          )}
+
+          <WidgetContainer colSpan={6}>
+            <PortfolioNewsWidget />
+          </WidgetContainer>
+
+          <WidgetContainer colSpan={6}>
+            <div className="space-y-4">
+              <EquitySectorsWidget />
+              <TopMoversWidget />
+            </div>
+          </WidgetContainer>
+
+          <WidgetContainer colSpan={12}>
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold">Your Portfolios</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {portfolioList.map((portfolio) => (
+                  <PortfolioCard key={portfolio.id} portfolio={portfolio} />
+                ))}
+              </div>
+            </div>
+          </WidgetContainer>
+        </WidgetGrid>
       )}
     </div>
   );

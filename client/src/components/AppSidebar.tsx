@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Settings, Building2, Wallet } from "lucide-react";
+import { Home, Users, FileText, Settings, Wallet } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -32,11 +32,9 @@ export function AppSidebar({ firmName = "Acme Capital", userRole = "Compliance O
     <Sidebar>
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Building2 className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <div className="h-10 w-10 rounded bg-primary" />
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Orca</h2>
+            <h2 className="text-lg font-semibold tracking-tight">ORCA</h2>
             <p className="text-xs text-muted-foreground">{firmName}</p>
           </div>
         </div>
