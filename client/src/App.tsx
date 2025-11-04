@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,23 +8,54 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppSidebar } from "@/components/AppSidebar";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Footer } from "@/components/Footer";
+import { useAuthStore } from "@/stores/authStore";
 import Dashboard from "@/pages/Dashboard";
 import NewKYC from "@/pages/NewKYC";
 import ClientDetail from "@/pages/ClientDetail";
 import Portfolios from "@/pages/Portfolios";
 import PortfolioDetail from "@/pages/PortfolioDetail";
-import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
+import Onboarding from "@/pages/Onboarding";
 import NotFound from "@/pages/not-found";
+import "@/lib/axios";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/kyc/new" component={NewKYC} />
-      <Route path="/client/:id" component={ClientDetail} />
-      <Route path="/portfolios" component={Portfolios} />
-      <Route path="/portfolios/:id" component={PortfolioDetail} />
+      <Route path="/login" component={Login} />
+      <Route path="/onboarding">
+        <ProtectedRoute>
+          <Onboarding />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/dashboard">
+        <ProtectedRoute requireInvestorType>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/kyc/new">
+        <ProtectedRoute requireInvestorType>
+          <NewKYC />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/client/:id">
+        <ProtectedRoute requireInvestorType>
+          <ClientDetail />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/portfolios">
+        <ProtectedRoute requireInvestorType>
+          <Portfolios />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/portfolios/:id">
+        <ProtectedRoute requireInvestorType>
+          <PortfolioDetail />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -31,41 +63,51 @@ function Router() {
 
 function AppLayout() {
   const [location] = useLocation();
-  const isLanding = location === "/";
+  const { user } = useAuthStore();
+  const isAuthPage = location === "/login" || location === "/onboarding";
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",
   };
 
-  if (isLanding) {
+  if (isAuthPage) {
     return <Router />;
   }
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full">
-        <AppSidebar
-          firmName="Acme Capital Partners"
-          userRole="Compliance Officer"
-          userName="Alex Morgan"
-        />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between px-6 py-4 border-b">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <ThemeToggle />
-          </header>
-          <main className="flex-1 overflow-y-auto px-6 py-8">
-            <div className="max-w-7xl mx-auto">
-              <Router />
-            </div>
-          </main>
+      <div className="flex h-screen w-full flex-col">
+        <div className="flex flex-1 overflow-hidden">
+          <AppSidebar
+            firmName="Acme Capital Partners"
+            userRole={user?.investorType ? user.investorType.charAt(0).toUpperCase() + user.investorType.slice(1) + " Investor" : "Compliance Officer"}
+            userName={user?.email || "Alex Morgan"}
+          />
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <header className="flex items-center justify-between px-6 py-4 border-b">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <ThemeToggle />
+            </header>
+            <main className="flex-1 overflow-y-auto px-6 py-8">
+              <div className="max-w-7xl mx-auto">
+                <Router />
+              </div>
+            </main>
+          </div>
         </div>
+        <Footer />
       </div>
     </SidebarProvider>
   );
 }
 
 function App() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
