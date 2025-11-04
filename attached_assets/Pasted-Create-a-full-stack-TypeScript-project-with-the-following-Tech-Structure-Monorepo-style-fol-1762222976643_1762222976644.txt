@@ -1,0 +1,69 @@
+Create a full-stack TypeScript project with the following:
+
+## Tech + Structure
+- Monorepo style folders:
+  /server  (Node 20, Express, TypeScript)
+  /web     (React 18 + Vite + TypeScript)
+  /shared  (TypeScript types)
+- Add ESLint + Prettier (strict) to both /server and /web.
+- In Replit “Secrets”, create env vars:
+  JWT_SECRET (random string)
+  ADMIN_USERNAME (e.g., demo@orca.io)
+  ADMIN_PASSWORD_HASH (bcrypt hash of demo password; provide a script to generate)
+
+## Server requirements (/server)
+- Dependencies: express, cors, helmet, zod, jsonwebtoken, bcryptjs, cookie-parser, node-cache, morgan
+- src/index.ts:
+  - Express with helmet, CORS (origin: the Vite dev origin), cookie-parser, morgan.
+  - Routes under /api.
+- Auth:
+  - POST /api/auth/login { username, password } → verify against ADMIN_USERNAME + ADMIN_PASSWORD_HASH.
+  - On success, issue HTTP-only cookie orcajwt (JWT signed with JWT_SECRET, 24h expiration) containing { sub, role: 'admin' }.
+  - GET /api/auth/me → returns { authenticated, user: { email, role, investorType? } } if valid cookie.
+  - POST /api/auth/logout → clear cookie.
+- Investor classification:
+  - POST /api/investor-classification { investorType: 'professional' | 'accredited' | 'retail' }
+  - Store “last saved” per sub in a simple in-memory NodeCache for demo.
+  - Middleware requireAuth that blocks access to protected routes if JWT missing/invalid.
+- Security:
+  - Use SameSite='lax', secure: true when served over HTTPS; in dev allow non-secure.
+  - Rate-limit login (basic in-memory counter by IP; lockout after 5 tries for 10 minutes).
+
+## Web requirements (/web)
+- Vite + React + TypeScript. Add react-router-dom, axios, zod.
+- Global layout:
+  - Hero section:
+    Logo “Orca”
+    Tagline: “Institutional software, built for every portfolio.”
+    Descriptor: “Orca gives asset managers, family offices, and RIAs the tools to manage portfolios, monitor risk, and track performance with the same power as the world’s largest funds.”
+  - Login form (email + password). On success, route to /onboarding if no investorType yet, else /portfolio.
+  - Footer:
+    © Orca Technologies. Orca is a software platform for data analytics and portfolio management.
+    Orca does not provide investment advice or manage client funds. Access to certain features may be restricted to qualified or professional investors in accordance with local regulations.
+- Onboarding route (/onboarding):
+  - Card titled “Select your investor type”
+  - Radio options: Professional/Institutional, Accredited Individual, Retail/Demo
+  - Submit → POST to /api/investor-classification, then redirect to /portfolio
+  - If user selects Retail, show note: “Some features may be limited for regulatory reasons.”
+- Route guard:
+  - If not authenticated, redirect to / (login).
+- UI:
+  - Minimal Tailwind setup for spacing/typography.
+  - Dark-mode friendly, neutral colors; no CSS frameworks beyond Tailwind.
+
+## Developer scripts & quality
+- Add dev scripts:
+  root dev runs concurrently → server:dev and web:dev
+- Add format and lint scripts; fail CI on lint errors.
+- Create scripts/hash-password.ts to generate bcrypt hash printed to console.
+- Add README.md with:
+  How to run (including Replit Secrets)
+  How to generate password hash
+  Security caveats (demo only; replace NodeCache with DB)
+
+## Common Replit pitfalls to avoid
+- CORS: cors({ origin: 'http://localhost:5173', credentials: true })
+- Cookies: axios withCredentials: true; Express cookies configured per environment.
+- Type safety: Use zod to validate POST bodies; return 400 on invalid.
+- Error handling: Central errorHandler middleware; hide stack traces in prod.
+- Env access: Never log secrets; read via process.env; throw if missing.
