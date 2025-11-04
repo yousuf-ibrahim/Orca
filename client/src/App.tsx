@@ -18,12 +18,14 @@ import Portfolios from "@/pages/Portfolios";
 import PortfolioDetail from "@/pages/PortfolioDetail";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
+import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import "@/lib/axios";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/onboarding">
         <ProtectedRoute>
@@ -55,7 +57,6 @@ function Router() {
           <PortfolioDetail />
         </ProtectedRoute>
       </Route>
-      <Route path="/" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -64,7 +65,7 @@ function Router() {
 function AppLayout() {
   const [location] = useLocation();
   const { user } = useAuthStore();
-  const isAuthPage = location === "/login" || location === "/onboarding";
+  const isAuthPage = location === "/" || location === "/login" || location === "/onboarding";
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",

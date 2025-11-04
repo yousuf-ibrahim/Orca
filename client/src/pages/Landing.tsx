@@ -96,7 +96,7 @@ export default function Landing() {
               enterprise price tag or bloat.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" onClick={() => setLocation("/dashboard")} data-testid="button-get-started">
+              <Button size="lg" onClick={() => setLocation("/login")} data-testid="button-get-started">
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -367,7 +367,7 @@ export default function Landing() {
               Start with institutional-grade tools from day one.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Button size="lg" onClick={() => setLocation("/dashboard")} data-testid="button-cta-start">
+              <Button size="lg" onClick={() => setLocation("/login")} data-testid="button-cta-start">
                 Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
