@@ -55,6 +55,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       secure: isProduction,
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/', // Ensure cookie is sent with all requests
     });
 
     const investorType = investorCache.get<string>(username);
@@ -91,7 +92,7 @@ router.get('/me', requireAuth, (req: AuthRequest, res) => {
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('orcajwt');
+  res.clearCookie('orcajwt', { path: '/' });
   res.json({ success: true });
 });
 
