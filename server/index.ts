@@ -1,10 +1,31 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
 import { registerRoutes } from "./routes";
+import { authRouter } from "./routes/auth";
+import { investorRouter } from "./routes/investor";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow Vite dev server
+}));
+
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Logging middleware
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+
+// Auth routes (must come before other API routes)
+app.use('/api/auth', authRouter);
+app.use('/api', investorRouter);
 
 app.use((req, res, next) => {
   const start = Date.now();

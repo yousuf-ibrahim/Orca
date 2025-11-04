@@ -1,0 +1,61 @@
+Go with **Option A: integrate into the existing Orca project**. It’s faster, keeps your dashboard intact, and avoids duplicating infra.
+
+### Minimal-change integration plan
+
+1. **Env & secrets**
+
+* Add to Replit Secrets: `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`.
+* Create a one-off script to generate `ADMIN_PASSWORD_HASH` (bcrypt).
+
+2. **Server (/server)**
+
+* Install: `express`, `cors`, `helmet`, `cookie-parser`, `zod`, `jsonwebtoken`, `bcryptjs`, `node-cache`, `morgan`.
+* Add `middleware/requireAuth.ts` (verifies `orcajwt` from HTTP-only cookie).
+* Add `routes/auth.ts`:
+
+  * `POST /api/auth/login` → verify creds, set `orcajwt` (24h).
+  * `GET /api/auth/me` → return `{ authenticated, user: { email, role, investorType? } }`.
+  * `POST /api/auth/logout` → clear cookie.
+* Add `routes/investor.ts` (protected):
+
+  * `POST /api/investor-classification` with zod: `'professional' | 'accredited' | 'retail'`.
+  * Store per-user in `NodeCache` (demo) keyed by `sub`.
+* Wire routes in `server.ts` (keep CORS with `credentials:true` for your current client origin).
+* Add simple login rate limiter (in-memory IP counter).
+
+3. **Client (/client)**
+
+* Install: `react-router-dom`, `axios`, `zod`, `zustand` (for auth state).
+* Set `axios.defaults.withCredentials = true`.
+* Add pages:
+
+  * `/login` (email+password form).
+  * `/onboarding` (radio for investor type; POST → redirect to `/portfolio`).
+* Add **route guard** HOC that calls `/api/auth/me`; redirect unauthenticated users to `/login`; if `investorType` missing, push to `/onboarding`.
+* Inject **hero copy** on `/login`:
+
+  * Tagline: “Institutional software, built for every portfolio.”
+  * One-liner: “Orca gives asset managers, family offices, and RIAs the tools…”
+* Add **global footer** to your existing layout with the compliance text.
+* Keep your current dashboard under `/portfolio` unchanged; guard it.
+
+4. **Wiring with existing widgets**
+
+* Leave portfolio news, charts, watchlist, and earnings calendar as-is—only wrap the `/portfolio` route with the guard.
+* Optionally gray-out advanced features for `retail` users (client-only check on `investorType`).
+
+5. **Common pitfalls to avoid**
+
+* **CORS/cookies:** Server `cors({ origin: CLIENT_URL, credentials:true })`; client `withCredentials=true`.
+* **HTTP-only cookie only:** No JWT in `localStorage`.
+* **Type safety:** Validate all request bodies with zod; never trust client.
+* **Dev vs prod cookies:** `secure:true` only over HTTPS; `SameSite:'lax'`.
+
+6. **Smoke tests**
+
+* Bad password → locked after 5 attempts/10 min.
+* Fresh login → `/onboarding` → select type → `/portfolio`.
+* Refresh page → still authenticated (cookie persists).
+* `/api/auth/me` shows `investorType`.
+
+This keeps your Bloomberg-style dashboard intact and adds clean, Gilfoyle-approved access control with minimal churn.
