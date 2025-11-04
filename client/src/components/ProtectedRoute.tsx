@@ -19,7 +19,7 @@ export function ProtectedRoute({ children, requireInvestorType = false }: Protec
         setLocation('/onboarding');
       }
     }
-  }, [isAuthenticated, isLoading, user, requireInvestorType, setLocation]);
+  }, [isAuthenticated, isLoading, user?.investorType, requireInvestorType]);
 
   if (isLoading) {
     return (
