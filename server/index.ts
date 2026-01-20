@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { registerRoutes } from "./routes";
 import { authRouter } from "./routes/auth";
 import { investorRouter } from "./routes/investor";
+import marketRouter from "./routes/market";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -26,6 +27,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Auth routes (must come before other API routes)
 app.use('/api/auth', authRouter);
 app.use('/api', investorRouter);
+app.use('/api/market', marketRouter);
 
 app.use((req, res, next) => {
   const start = Date.now();
