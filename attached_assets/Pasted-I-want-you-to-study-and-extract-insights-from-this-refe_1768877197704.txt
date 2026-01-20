@@ -1,0 +1,74 @@
+I want you to study and extract insights from this reference page on AI tools for hedge funds:
+
+Reference:
+https://alexizydorczyk.com/ai-for-hedge-funds.html
+
+Context on Orca:
+Orca is envisioned as a modern, modular operating system for hedge funds, asset managers, and investment firms — especially sub-scale to mid-sized funds that cannot afford or do not want bloated, enterprise platforms. Orca should feel like “infrastructure + intelligence,” not a single-purpose AI toy.
+
+Your job is NOT to copy tools, but to:
+- Identify which categories of tools and startups listed on that page are most aligned with Orca’s long-term vision
+- Distill patterns in what hedge funds are actually paying for and using
+- Translate those insights into concrete, buildable product modules Orca could realistically offer
+
+Constraints:
+- Do NOT invent claims like “used by top hedge funds,” “billions in AUM,” or proprietary data access
+- Avoid anything that requires licensed data unless clearly framed as “client-provided data”
+- Orca should augment existing workflows (PMS, OMS, admin, custodian), not pretend to replace everything
+- Focus on tools that reduce operational friction, cognitive load, and analyst time
+
+What I want you to do:
+
+A) Analyze the reference site and categorize the tools it mentions into clear functional buckets, such as:
+- Research & knowledge extraction
+- Financial modeling / forecasting
+- Alternative data processing
+- Portfolio & risk intelligence
+- Compliance, reporting, and operations
+- Decision support / copilots for PMs and analysts
+
+For each category:
+- Identify what hedge funds are actually trying to solve
+- Call out which categories are overhyped vs genuinely useful
+- Highlight where smaller funds are underserved by existing tools
+
+B) Identify which of those categories best align with Orca’s core identity:
+- Modular
+- Workflow-native
+- Trustworthy and auditable
+- Built for real fund operations, not demos
+
+Explicitly state:
+- What Orca SHOULD build
+- What Orca should intentionally NOT build (at least for now)
+
+C) Translate this into concrete Orca product modules we could build, for example:
+- An AI research copilot that works on internal memos, models, and IC notes
+- A portfolio intelligence layer that sits on top of existing PMS data
+- A compliance / reporting assistant that reduces manual prep
+- A data normalization and “single source of truth” layer
+(These are examples — propose better ones if appropriate.)
+
+For each proposed module:
+- What problem it solves
+- Who the primary user is (analyst, PM, ops, compliance)
+- What data it would rely on (client-uploaded only vs integrations)
+- Why this is realistic and defensible for Orca to build
+
+D) Output a prioritized roadmap:
+- Phase 1: High-impact, low-complexity modules Orca should build first
+- Phase 2: Deeper intelligence layers once core workflows are trusted
+- Phase 3: Optional or advanced tools once Orca has adoption
+
+E) Finally, suggest how Orca should POSITION itself relative to the tools on the reference page:
+- What language to use (and avoid)
+- How to differentiate from “AI for hedge funds” hype
+- How to frame Orca as infrastructure, not just AI
+
+Deliverables:
+1) A clear summary of insights extracted from the reference page
+2) A list of Orca-aligned modules with rationale
+3) A phased product roadmap
+4) Positioning guidance for Orca’s website and pitch
+
+Proceed step by step and be opinionated but grounded.

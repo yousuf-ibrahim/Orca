@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Settings, Wallet } from "lucide-react";
+import { Home, Users, FileText, Settings, Wallet, Sparkles, FileCheck, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,10 +13,15 @@ import {
 } from "@/components/ui/sidebar";
 import { useLocation } from "wouter";
 
-const menuItems = [
+const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Portfolios", url: "/portfolios", icon: Wallet },
   { title: "KYC", url: "/kyc/new", icon: FileText },
+];
+
+const aiToolsItems = [
+  { title: "Research Copilot", url: "/research", icon: Sparkles },
+  { title: "Compliance Reports", url: "/compliance/reports", icon: FileCheck },
 ];
 
 interface AppSidebarProps {
@@ -44,11 +49,35 @@ export function AppSidebar({ firmName = "Acme Capital", userRole = "Compliance O
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {mainMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <a href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center gap-2">
+            <Sparkles className="h-3 w-3 text-primary" />
+            AI-Powered Tools
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {aiToolsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url || location.startsWith(item.url)}
                     data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     <a href={item.url}>

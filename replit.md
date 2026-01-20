@@ -2,12 +2,13 @@
 
 ## Overview
 
-Orca is an enterprise-grade financial operations platform for small investment firms, focusing on two core capabilities:
+Orca is an enterprise-grade financial operations platform for small investment firms, focusing on three core capabilities:
 
 1. **KYC & Compliance**: Client onboarding, verification, risk assessment, and regulatory documentation with structured workflows
 2. **Portfolio Monitoring**: Bloomberg-linked securities master, multi-custodian portfolio tracking, asset allocation analysis, and position-level P&L monitoring
+3. **AI-Powered Intelligence**: Research Copilot for semantic document search, Portfolio Intelligence (health scores, risk alerts), and Compliance Automation (one-click report generation)
 
-The platform enables efficient client onboarding and ongoing portfolio surveillance for hedge funds and asset managers, positioning as "the Addepar for small hedge funds" - enterprise infrastructure for boutique firms.
+The platform enables efficient client onboarding and ongoing portfolio surveillance for hedge funds and asset managers, positioning as "the Addepar for small hedge funds" - enterprise infrastructure for boutique firms. AI tools are designed to augment human judgment, not replace it—all insights are auditable with source citations.
 
 ## User Preferences
 
@@ -42,6 +43,12 @@ Key features include Zod schema validation, audit logging for all operations, an
 - **Positions**: Security-level holdings across custodians with quantity, cost basis, current price, market value, unrealized/realized P&L, allocation percentages, and income tracking
 
 **Bloomberg Integration Readiness**: Securities master designed for Bloomberg Server API (SAPI) and EMSX API integration, with full support for Bloomberg identifiers and reference data fields.
+
+**AI-Powered Intelligence Domain**:
+- **Research Copilot** (`/research`): Semantic search across IC notes, memos, and research documents. Natural language queries with AI-synthesized answers and source citations.
+- **Portfolio Health Widget**: Automated health scoring based on P&L, leverage, and concentration metrics with AI-generated alerts and recommendations.
+- **Risk Insights Widget**: Scenario analysis, correlation warnings, and factor exposure insights for portfolio risk management.
+- **Compliance Reports** (`/compliance/reports`): One-click generation of regulatory filings (DFSA quarterly), LP performance letters, audit trail exports, and KYC status summaries.
 
 ## External Dependencies
 

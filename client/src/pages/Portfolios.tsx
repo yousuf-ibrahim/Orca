@@ -12,6 +12,8 @@ import { PortfolioNewsWidget } from "@/components/widgets/PortfolioNewsWidget";
 import { EquitySectorsWidget } from "@/components/widgets/EquitySectorsWidget";
 import { TopMoversWidget } from "@/components/widgets/TopMoversWidget";
 import { PortfolioStatsWidget } from "@/components/widgets/PortfolioStatsWidget";
+import { PortfolioHealthWidget } from "@/components/widgets/PortfolioHealthWidget";
+import { RiskInsightsWidget } from "@/components/widgets/RiskInsightsWidget";
 import { WidgetGrid, WidgetContainer } from "@/components/widgets/WidgetGrid";
 
 function formatCurrency(value: string | number | null | undefined): string {
@@ -209,6 +211,14 @@ export default function Portfolios() {
               <PortfolioStatsWidget portfolios={portfolioList} />
             </WidgetContainer>
           )}
+
+          <WidgetContainer colSpan={6}>
+            <PortfolioHealthWidget portfolios={portfolioList} />
+          </WidgetContainer>
+
+          <WidgetContainer colSpan={6}>
+            <RiskInsightsWidget portfolios={portfolioList} />
+          </WidgetContainer>
 
           <WidgetContainer colSpan={6}>
             <PortfolioNewsWidget portfolioIds={portfolioList.map(p => p.id)} />

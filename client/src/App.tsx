@@ -16,6 +16,8 @@ import NewKYC from "@/pages/NewKYC";
 import ClientDetail from "@/pages/ClientDetail";
 import Portfolios from "@/pages/Portfolios";
 import PortfolioDetail from "@/pages/PortfolioDetail";
+import ResearchCopilot from "@/pages/ResearchCopilot";
+import ComplianceReports from "@/pages/ComplianceReports";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Landing from "@/pages/Landing";
@@ -55,6 +57,16 @@ function Router() {
       <Route path="/portfolios/:id">
         <ProtectedRoute requireInvestorType>
           <PortfolioDetail />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/research">
+        <ProtectedRoute requireInvestorType>
+          <ResearchCopilot />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/compliance/reports">
+        <ProtectedRoute requireInvestorType>
+          <ComplianceReports />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />

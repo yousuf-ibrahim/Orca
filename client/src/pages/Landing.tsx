@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Shield, Clock, FileCheck, Users, TrendingUp, ArrowRight, Zap, Target } from "lucide-react";
+import { Building2, Shield, Clock, FileCheck, Users, TrendingUp, ArrowRight, Zap, Target, Sparkles, Brain, BarChart3, Search } from "lucide-react";
 import { useLocation } from "wouter";
 import { LogoCarousel } from "@/components/LogoCarousel";
 
@@ -187,6 +187,81 @@ export default function Landing() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* AI-Powered Intelligence Section */}
+        <div className="mb-24">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <Sparkles className="h-4 w-4" />
+              AI-Powered Intelligence
+            </div>
+            <h2 className="text-3xl font-bold mb-4">Your Team, Amplified</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              AI that augments your analysts and ops team—not replaces them. 
+              Reduce cognitive load, automate prep work, and surface insights from fragmented data.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="border-border hover-elevate">
+              <CardContent className="p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
+                  <Search className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Research Copilot</h3>
+                <p className="text-sm text-muted-foreground">
+                  Natural language search across your IC notes, memos, and research. 
+                  Find what your team said about any topic instantly.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border hover-elevate">
+              <CardContent className="p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Portfolio Intelligence</h3>
+                <p className="text-sm text-muted-foreground">
+                  Automated health scores, concentration alerts, and scenario analysis 
+                  on top of your existing position data.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border hover-elevate">
+              <CardContent className="p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
+                  <FileCheck className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Compliance Automation</h3>
+                <p className="text-sm text-muted-foreground">
+                  One-click regulatory reports, LP letters, and audit exports. 
+                  Turn days of prep into minutes.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border hover-elevate">
+              <CardContent className="p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
+                  <Brain className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Risk Insights</h3>
+                <p className="text-sm text-muted-foreground">
+                  Correlation warnings, factor exposure analysis, and stress scenarios 
+                  that help you understand portfolio risk.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              <span className="text-foreground font-medium">Your data, your insights, fully auditable.</span> No black boxes—every AI-generated insight links back to source documents.
+            </p>
+          </div>
         </div>
 
         {/* Screenshot Placeholder Section */}
