@@ -1,0 +1,73 @@
+Next step: focus ONLY on Hedgineer and treat it as a primary inspiration.
+
+Reference:
+https://www.hedgineer.io/product/
+
+Assume the following stance:
+- Hedgineer is broadly doing the *right things*
+- Most of its product surface is relevant to Orca
+- The goal is not differentiation for the sake of differentiation, but to build a leaner, more modular, more accessible version of what Hedgineer offers
+- “Steal like an artist”: extract the essence, simplify, and make it practical to build
+
+Context on Orca:
+Orca is a modular operating system for hedge funds and asset managers. It should cover research, portfolio intelligence, reporting, and operational visibility — without becoming bloated enterprise software or a services-heavy custom build shop.
+
+What I want you to do:
+
+A) Deconstruct Hedgineer’s product **component by component**
+Break down everything Hedgineer offers into clear functional modules, such as:
+- Centralized data model / data fabric
+- Portfolio analytics
+- Risk & performance views
+- Research tools (coverage, notes, forecasts)
+- Reference data & security master
+- Investor reporting
+- Workflow, alerts, permissions, integrations
+- AI / automation hooks
+
+For each component:
+- What problem it solves in a real hedge fund
+- Who uses it (PM, analyst, ops, IR)
+- Why funds actually pay for it
+
+B) Translate each Hedgineer component into an **Orca version**
+For almost every component, assume Orca *should* build it — but:
+- Simpler
+- More opinionated
+- More modular
+- Easier to onboard
+- Less enterprise bloat
+
+Explicitly define:
+- What the Orca version looks like
+- What is in scope vs out of scope
+- What can be built first vs layered later
+
+C) Be brutally practical about implementation
+For each Orca module inspired by Hedgineer:
+- What core data it needs (positions, trades, admin files, user uploads, APIs)
+- Whether it can work with client-provided data only
+- What can be built without deep integrations on day one
+- What can be layered with integrations later (OMS, admin, custodian)
+
+D) Output a concrete Orca build plan
+Deliver:
+1) A list of Orca modules mapped 1:1 (or close) to Hedgineer features
+2) A phased build order:
+   - Phase 1: foundational + highest leverage
+   - Phase 2: analytics + intelligence
+   - Phase 3: automation + polish
+3) Clear notes on what Orca intentionally simplifies compared to Hedgineer
+
+E) Keep positioning grounded
+Do NOT use language like:
+- “replacement for PMS/OMS”
+- “used by top hedge funds”
+- “AI-powered alpha generation”
+
+Instead, frame Orca as:
+- A modern operating layer
+- A unifying system of record
+- A productivity multiplier for investment teams
+
+Proceed methodically and treat Hedgineer as the blueprint, not a competitor to overcorrect against.

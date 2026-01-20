@@ -16,6 +16,19 @@ Preferred communication style: Simple, everyday language.
 Design aesthetic: Dark theme (#19171f background) with teal accent (#3ea6b6), Bloomberg Terminal inspired
 Brand positioning: "Addepar for small hedge funds" - enterprise infrastructure for boutique firms
 
+## Strategic Direction (Hedgineer-Inspired)
+
+Orca is modeled after Hedgineer's comprehensive approach but simplified for faster deployment:
+- **Securities Master**: Multi-identifier repository with custom tagging (CSV-first, Bloomberg later)
+- **Portfolio Hub**: Position tracking, P&L, allocations (CSV-first, OMS later)
+- **Research Workspace**: Coverage tracker, notes, company pages (rule-based first, AI search later)
+- **Investor Reporting**: Template-based LP letters and reports (manual first, scheduled later)
+- **Compliance Center**: KYC workflows, audit trails, regulatory reports
+- **AI Intelligence**: Rule-based health scores and alerts (LLM integration later)
+
+Philosophy: 80% of value from 20% of features. Works standalone with CSV uploads, integrates later.
+See ORCA_BUILD_PLAN.md for full phased roadmap.
+
 ## System Architecture
 
 ### Frontend Architecture
