@@ -18,6 +18,8 @@ import Portfolios from "@/pages/Portfolios";
 import PortfolioDetail from "@/pages/PortfolioDetail";
 import ResearchCopilot from "@/pages/ResearchCopilot";
 import ComplianceReports from "@/pages/ComplianceReports";
+import Securities from "@/pages/Securities";
+import SecuritiesImport from "@/pages/SecuritiesImport";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Landing from "@/pages/Landing";
@@ -67,6 +69,16 @@ function Router() {
       <Route path="/compliance/reports">
         <ProtectedRoute requireInvestorType>
           <ComplianceReports />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/securities">
+        <ProtectedRoute requireInvestorType>
+          <Securities />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/securities/import">
+        <ProtectedRoute requireInvestorType>
+          <SecuritiesImport />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />

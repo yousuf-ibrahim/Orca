@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { Plus, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Wallet, RefreshCw } from "lucide-react";
 import type { Portfolio } from "@shared/schema";
 import { MarketIndicesWidget } from "@/components/widgets/MarketIndicesWidget";
 import { MarketSentimentWidget } from "@/components/widgets/MarketSentimentWidget";
@@ -41,26 +41,27 @@ function PortfolioCard({ portfolio }: { portfolio: Portfolio }) {
 
   return (
     <Link href={`/portfolios/${portfolio.id}`}>
-      <Card className="hover-elevate active-elevate-2 cursor-pointer transition-all" data-testid={`card-portfolio-${portfolio.id}`}>
-        <CardHeader className="space-y-1 pb-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-lg" data-testid={`text-portfolio-name-${portfolio.id}`}>
+      <Card className="border-border/50 hover:border-primary/30 transition-smooth cursor-pointer h-full" data-testid={`card-portfolio-${portfolio.id}`}>
+        <CardHeader className="space-y-2 pb-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-lg truncate" data-testid={`text-portfolio-name-${portfolio.id}`}>
                 {portfolio.portfolioName}
               </CardTitle>
-              <CardDescription data-testid={`text-account-${portfolio.id}`}>
+              <CardDescription className="truncate" data-testid={`text-account-${portfolio.id}`}>
                 {portfolio.accountNumber || "No account number"}
               </CardDescription>
             </div>
             <Badge 
               variant={portfolio.status === "active" ? "default" : "secondary"}
+              className="shrink-0"
               data-testid={`badge-status-${portfolio.id}`}
             >
               {portfolio.status}
             </Badge>
           </div>
           {portfolio.investmentRiskProfile && (
-            <Badge variant="outline" className="w-fit" data-testid={`badge-risk-${portfolio.id}`}>
+            <Badge variant="outline" className="w-fit text-xs" data-testid={`badge-risk-${portfolio.id}`}>
               {portfolio.investmentRiskProfile.replace(/_/g, " ")}
             </Badge>
           )}
@@ -68,27 +69,27 @@ function PortfolioCard({ portfolio }: { portfolio: Portfolio }) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Market Value</p>
-              <p className="text-2xl font-semibold" data-testid={`text-market-value-${portfolio.id}`}>
+              <p className="text-xs text-muted-foreground mb-1">Market Value</p>
+              <p className="text-xl font-semibold" data-testid={`text-market-value-${portfolio.id}`}>
                 {formatCurrency(totalMarketValue)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Unrealized P&L</p>
+              <p className="text-xs text-muted-foreground mb-1">Unrealized P&L</p>
               <div className="flex items-center gap-2">
                 {isPositive ? (
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  <TrendingUp className="h-4 w-4 text-success shrink-0" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 text-red-500" />
+                  <TrendingDown className="h-4 w-4 text-error shrink-0" />
                 )}
                 <div>
                   <p 
-                    className={`text-xl font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}
+                    className={`text-lg font-semibold ${isPositive ? "text-success" : "text-error"}`}
                     data-testid={`text-pnl-${portfolio.id}`}
                   >
                     {formatCurrency(totalUnrealizedPnl)}
                   </p>
-                  <p className={`text-xs ${isPositive ? "text-green-500" : "text-red-500"}`}>
+                  <p className={`text-xs ${isPositive ? "text-success" : "text-error"}`}>
                     {formatPercent(pnlPercent)}
                   </p>
                 </div>
@@ -97,7 +98,7 @@ function PortfolioCard({ portfolio }: { portfolio: Portfolio }) {
           </div>
 
           {portfolio.asOfDate && (
-            <div className="pt-2 border-t">
+            <div className="pt-3 border-t border-border/50">
               <p className="text-xs text-muted-foreground">
                 As of {new Date(portfolio.asOfDate).toLocaleDateString()}
               </p>
@@ -114,7 +115,7 @@ function PortfoliosSkeleton() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i}>
+          <Card key={i} className="border-border/50">
             <CardHeader>
               <Skeleton className="h-6 w-32" />
             </CardHeader>
@@ -127,7 +128,7 @@ function PortfoliosSkeleton() {
       <Skeleton className="h-32 w-full" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i}>
+          <Card key={i} className="border-border/50">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-32" />
@@ -143,13 +144,13 @@ function PortfoliosSkeleton() {
 }
 
 export default function Portfolios() {
-  const { data: portfolios, isLoading } = useQuery<Portfolio[]>({
+  const { data: portfolios, isLoading, refetch } = useQuery<Portfolio[]>({
     queryKey: ["/api/portfolios"],
   });
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-40" />
@@ -162,34 +163,42 @@ export default function Portfolios() {
   const portfolioList = portfolios || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 lg:p-8 space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold" data-testid="heading-portfolios">
+          <h1 className="text-2xl lg:text-3xl font-semibold tracking-tight" data-testid="heading-portfolios">
             Portfolio Monitoring
           </h1>
           <p className="text-muted-foreground mt-1">
             Track and analyze client portfolios with real-time market insights
           </p>
         </div>
-        <Link href="/portfolios/new">
-          <Button data-testid="button-create-portfolio">
-            <Plus className="mr-2 h-4 w-4" />
-            New Portfolio
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/portfolios/new">
+            <Button data-testid="button-create-portfolio">
+              <Plus className="mr-2 h-4 w-4" />
+              New Portfolio
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {portfolioList.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="border-border/50 text-center py-16">
           <CardContent>
-            <Wallet className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Portfolios Yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Create your first portfolio to start monitoring client investments
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-6">
+              <Wallet className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">No Portfolios Yet</h3>
+            <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+              Create your first portfolio to start monitoring client investments and tracking performance
             </p>
             <Link href="/portfolios/new">
-              <Button data-testid="button-create-first-portfolio">
+              <Button size="lg" data-testid="button-create-first-portfolio">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Portfolio
               </Button>
@@ -232,8 +241,8 @@ export default function Portfolios() {
           </WidgetContainer>
 
           <WidgetContainer colSpan={12}>
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Your Portfolios</h2>
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Your Portfolios</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {portfolioList.map((portfolio) => (
                   <PortfolioCard key={portfolio.id} portfolio={portfolio} />

@@ -95,18 +95,18 @@ function PortfolioHeader({ portfolio }: { portfolio: Portfolio }) {
           <CardContent>
             <div className="flex items-center gap-2">
               {isPositive ? (
-                <TrendingUp className="h-5 w-5 text-green-500" />
+                <TrendingUp className="h-5 w-5 text-success" />
               ) : (
-                <TrendingDown className="h-5 w-5 text-red-500" />
+                <TrendingDown className="h-5 w-5 text-error" />
               )}
               <div>
                 <p 
-                  className={`text-2xl font-bold ${isPositive ? "text-green-500" : "text-red-500"}`}
+                  className={`text-2xl font-bold ${isPositive ? "text-success" : "text-error"}`}
                   data-testid="text-unrealized-pnl"
                 >
                   {formatCurrency(totalUnrealizedPnl)}
                 </p>
-                <p className={`text-xs ${isPositive ? "text-green-500" : "text-red-500"}`}>
+                <p className={`text-xs ${isPositive ? "text-success" : "text-error"}`}>
                   {formatPercent(pnlPercent)}
                 </p>
               </div>
@@ -155,14 +155,14 @@ function AssetAllocationChart({ positions }: { positions: PositionWithDetails[] 
   const total = Object.values(allocationByAssetClass).reduce((sum, val) => sum + val, 0);
 
   const assetClassColors: Record<string, string> = {
-    cash: "bg-blue-500",
-    fixed_income: "bg-green-500",
-    equity: "bg-purple-500",
-    alternatives: "bg-orange-500",
-    structured_products: "bg-pink-500",
-    fx_commodities: "bg-yellow-500",
-    swaps: "bg-red-500",
-    unknown: "bg-gray-500",
+    cash: "bg-chart-1",
+    fixed_income: "bg-chart-3",
+    equity: "bg-chart-2",
+    alternatives: "bg-chart-4",
+    structured_products: "bg-chart-5",
+    fx_commodities: "bg-primary",
+    swaps: "bg-destructive",
+    unknown: "bg-muted",
   };
 
   return (
@@ -274,7 +274,7 @@ function HoldingsTable({ positions }: { positions: PositionWithDetails[] }) {
                       <td className="py-3 px-4 text-right" data-testid={`text-allocation-${position.id}`}>
                         {formatPercent(position.allocationPercent)}
                       </td>
-                      <td className={`py-3 px-4 text-right font-medium ${isPositive ? "text-green-500" : "text-red-500"}`} data-testid={`text-pnl-${position.id}`}>
+                      <td className={`py-3 px-4 text-right font-medium ${isPositive ? "text-success" : "text-error"}`} data-testid={`text-pnl-${position.id}`}>
                         {formatCurrency(pnl)}
                       </td>
                     </tr>
@@ -362,16 +362,16 @@ export default function PortfolioDetail() {
 
   if (portfolioLoading || positionsLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="p-6 lg:p-8 space-y-6">
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-96 w-full rounded-lg" />
       </div>
     );
   }
 
   if (!portfolio) {
     return (
-      <div className="text-center py-12">
+      <div className="p-6 lg:p-8 text-center py-16">
         <h2 className="text-2xl font-bold">Portfolio Not Found</h2>
         <p className="text-muted-foreground mt-2">The requested portfolio does not exist.</p>
         <Link href="/portfolios">
@@ -382,7 +382,7 @@ export default function PortfolioDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 lg:p-8 space-y-8">
       <PortfolioHeader portfolio={portfolio} />
 
       <Tabs defaultValue="overview" className="w-full">
