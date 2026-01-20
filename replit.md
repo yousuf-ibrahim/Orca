@@ -13,8 +13,26 @@ The platform enables efficient client onboarding and ongoing portfolio surveilla
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Design aesthetic: Dark theme (#19171f background) with teal accent (#3ea6b6), Bloomberg Terminal inspired
+Design aesthetic: Dark theme with Storm Neutral Scale (260 hue), Teal Accent Ladder (#3ea6b6), precision minimalism approach
 Brand positioning: "Addepar for small hedge funds" - enterprise infrastructure for boutique firms
+
+## Recent Changes (Phase 1 Implementation)
+
+**Design System Overhaul (January 2026)**:
+- Implemented Storm Neutral Scale with 260 hue (--neutral-950 to --neutral-50)
+- Added Teal Accent Ladder (--teal-900 to --teal-100) for primary colors
+- Created semantic status colors: success (158 64% 52%), warning (38 92% 55%), error (0 72% 55%), info (199 89% 55%)
+- Added supporting colors: ember (24 95% 66%), lime (158 64% 80%)
+- Refined typography with -0.015em letter-spacing, optimized text rendering
+- Softer, layered shadow system (shadow-2xs through shadow-2xl)
+- Added utility classes: transition-smooth, gradient-hero, glass, skeleton-loading, glow-primary, text-gradient
+
+**Phase 1 Foundation Features**:
+- Securities Master page (`/securities`) with search, filter, and table view
+- CSV Import pipeline (`/securities/import`) with validation and progress tracking
+- Enhanced Portfolio Detail page with position-level P&L, asset allocation charts, custodian breakdown
+- Updated AppSidebar with Database icon for Securities navigation
+- Consistent p-6 lg:p-8 spacing across all main pages
 
 ## Strategic Direction (Hedgineer-Inspired)
 
