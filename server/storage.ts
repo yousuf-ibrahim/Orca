@@ -1,8 +1,8 @@
 import { db } from "./db";
-import { 
-  clients, 
-  kycApplications, 
-  documents, 
+import {
+  clients,
+  kycApplications,
+  documents,
   auditLogs,
   wealthInformation,
   beneficialOwnership,
@@ -16,6 +16,14 @@ import {
   custodians,
   portfolios,
   positions,
+  reconRuns,
+  reconBreaks,
+  fundStructures,
+  lpCommitments,
+  capitalCalls,
+  capitalCallAllocations,
+  capitalDistributions,
+  navRecords,
   type Client,
   type InsertClient,
   type KycApplication,
@@ -47,7 +55,23 @@ import {
   type Portfolio,
   type InsertPortfolio,
   type Position,
-  type InsertPosition
+  type InsertPosition,
+  type ReconRun,
+  type InsertReconRun,
+  type ReconBreak,
+  type InsertReconBreak,
+  type FundStructure,
+  type InsertFundStructure,
+  type LpCommitment,
+  type InsertLpCommitment,
+  type CapitalCall,
+  type InsertCapitalCall,
+  type CapitalCallAllocation,
+  type InsertCapitalCallAllocation,
+  type CapitalDistribution,
+  type InsertCapitalDistribution,
+  type NavRecord,
+  type InsertNavRecord,
 } from "@shared/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -146,6 +170,54 @@ export interface IStorage {
   createPosition(data: InsertPosition): Promise<Position>;
   updatePosition(id: number, firmId: number, data: Partial<InsertPosition>): Promise<Position | undefined>;
   deletePosition(id: number, firmId: number): Promise<void>;
+
+  // Recon Runs
+  getReconRuns(firmId: number): Promise<ReconRun[]>;
+  getReconRun(id: number, firmId: number): Promise<ReconRun | undefined>;
+  createReconRun(data: InsertReconRun): Promise<ReconRun>;
+  updateReconRun(id: number, firmId: number, data: Partial<InsertReconRun>): Promise<ReconRun | undefined>;
+
+  // Recon Breaks
+  getReconBreaks(firmId: number, reconRunId?: number): Promise<ReconBreak[]>;
+  getReconBreak(id: number, firmId: number): Promise<ReconBreak | undefined>;
+  createReconBreak(data: InsertReconBreak): Promise<ReconBreak>;
+  updateReconBreak(id: number, firmId: number, data: Partial<InsertReconBreak>): Promise<ReconBreak | undefined>;
+  getOpenReconBreaks(firmId: number): Promise<ReconBreak[]>;
+
+  // Fund Structures
+  getFundStructures(firmId: number): Promise<FundStructure[]>;
+  getFundStructure(id: number, firmId: number): Promise<FundStructure | undefined>;
+  createFundStructure(data: InsertFundStructure): Promise<FundStructure>;
+  updateFundStructure(id: number, firmId: number, data: Partial<InsertFundStructure>): Promise<FundStructure | undefined>;
+
+  // LP Commitments
+  getLpCommitments(firmId: number, fundId?: number): Promise<LpCommitment[]>;
+  getLpCommitment(id: number, firmId: number): Promise<LpCommitment | undefined>;
+  createLpCommitment(data: InsertLpCommitment): Promise<LpCommitment>;
+  updateLpCommitment(id: number, firmId: number, data: Partial<InsertLpCommitment>): Promise<LpCommitment | undefined>;
+
+  // Capital Calls
+  getCapitalCalls(firmId: number, fundId?: number): Promise<CapitalCall[]>;
+  getCapitalCall(id: number, firmId: number): Promise<CapitalCall | undefined>;
+  createCapitalCall(data: InsertCapitalCall): Promise<CapitalCall>;
+  updateCapitalCall(id: number, firmId: number, data: Partial<InsertCapitalCall>): Promise<CapitalCall | undefined>;
+
+  // Capital Call Allocations
+  getCapitalCallAllocations(capitalCallId: number, firmId: number): Promise<CapitalCallAllocation[]>;
+  createCapitalCallAllocation(data: InsertCapitalCallAllocation): Promise<CapitalCallAllocation>;
+  updateCapitalCallAllocation(id: number, firmId: number, data: Partial<InsertCapitalCallAllocation>): Promise<CapitalCallAllocation | undefined>;
+
+  // Capital Distributions
+  getCapitalDistributions(firmId: number, fundId?: number): Promise<CapitalDistribution[]>;
+  getCapitalDistribution(id: number, firmId: number): Promise<CapitalDistribution | undefined>;
+  createCapitalDistribution(data: InsertCapitalDistribution): Promise<CapitalDistribution>;
+  updateCapitalDistribution(id: number, firmId: number, data: Partial<InsertCapitalDistribution>): Promise<CapitalDistribution | undefined>;
+
+  // NAV Records
+  getNavRecords(firmId: number, fundId?: number): Promise<NavRecord[]>;
+  getLatestNavRecord(fundId: number, firmId: number): Promise<NavRecord | undefined>;
+  createNavRecord(data: InsertNavRecord): Promise<NavRecord>;
+  updateNavRecord(id: number, firmId: number, data: Partial<InsertNavRecord>): Promise<NavRecord | undefined>;
 }
 
 export class DbStorage implements IStorage {
@@ -540,6 +612,220 @@ export class DbStorage implements IStorage {
     await db.delete(positions).where(
       and(eq(positions.id, id), eq(positions.firmId, firmId))
     );
+  }
+
+  // Recon Runs
+  async getReconRuns(firmId: number): Promise<ReconRun[]> {
+    return db.select().from(reconRuns).where(eq(reconRuns.firmId, firmId)).orderBy(desc(reconRuns.runDate));
+  }
+
+  async getReconRun(id: number, firmId: number): Promise<ReconRun | undefined> {
+    const result = await db.select().from(reconRuns).where(and(eq(reconRuns.id, id), eq(reconRuns.firmId, firmId)));
+    return result[0];
+  }
+
+  async createReconRun(data: InsertReconRun): Promise<ReconRun> {
+    const result = await db.insert(reconRuns).values(data).returning();
+    return result[0];
+  }
+
+  async updateReconRun(id: number, firmId: number, data: Partial<InsertReconRun>): Promise<ReconRun | undefined> {
+    const result = await db.update(reconRuns)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(reconRuns.id, id), eq(reconRuns.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Recon Breaks
+  async getReconBreaks(firmId: number, reconRunId?: number): Promise<ReconBreak[]> {
+    if (reconRunId) {
+      return db.select().from(reconBreaks).where(
+        and(eq(reconBreaks.firmId, firmId), eq(reconBreaks.reconRunId, reconRunId))
+      ).orderBy(desc(reconBreaks.createdAt));
+    }
+    return db.select().from(reconBreaks).where(eq(reconBreaks.firmId, firmId)).orderBy(desc(reconBreaks.createdAt));
+  }
+
+  async getReconBreak(id: number, firmId: number): Promise<ReconBreak | undefined> {
+    const result = await db.select().from(reconBreaks).where(and(eq(reconBreaks.id, id), eq(reconBreaks.firmId, firmId)));
+    return result[0];
+  }
+
+  async createReconBreak(data: InsertReconBreak): Promise<ReconBreak> {
+    const result = await db.insert(reconBreaks).values(data).returning();
+    return result[0];
+  }
+
+  async updateReconBreak(id: number, firmId: number, data: Partial<InsertReconBreak>): Promise<ReconBreak | undefined> {
+    const result = await db.update(reconBreaks)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(reconBreaks.id, id), eq(reconBreaks.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  async getOpenReconBreaks(firmId: number): Promise<ReconBreak[]> {
+    return db.select().from(reconBreaks).where(
+      and(eq(reconBreaks.firmId, firmId), eq(reconBreaks.status, "open"))
+    ).orderBy(desc(reconBreaks.createdAt));
+  }
+
+  // Fund Structures
+  async getFundStructures(firmId: number): Promise<FundStructure[]> {
+    return db.select().from(fundStructures).where(eq(fundStructures.firmId, firmId)).orderBy(desc(fundStructures.createdAt));
+  }
+
+  async getFundStructure(id: number, firmId: number): Promise<FundStructure | undefined> {
+    const result = await db.select().from(fundStructures).where(and(eq(fundStructures.id, id), eq(fundStructures.firmId, firmId)));
+    return result[0];
+  }
+
+  async createFundStructure(data: InsertFundStructure): Promise<FundStructure> {
+    const result = await db.insert(fundStructures).values(data).returning();
+    return result[0];
+  }
+
+  async updateFundStructure(id: number, firmId: number, data: Partial<InsertFundStructure>): Promise<FundStructure | undefined> {
+    const result = await db.update(fundStructures)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(fundStructures.id, id), eq(fundStructures.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // LP Commitments
+  async getLpCommitments(firmId: number, fundId?: number): Promise<LpCommitment[]> {
+    if (fundId) {
+      return db.select().from(lpCommitments).where(
+        and(eq(lpCommitments.firmId, firmId), eq(lpCommitments.fundId, fundId))
+      ).orderBy(desc(lpCommitments.commitmentDate));
+    }
+    return db.select().from(lpCommitments).where(eq(lpCommitments.firmId, firmId)).orderBy(desc(lpCommitments.commitmentDate));
+  }
+
+  async getLpCommitment(id: number, firmId: number): Promise<LpCommitment | undefined> {
+    const result = await db.select().from(lpCommitments).where(and(eq(lpCommitments.id, id), eq(lpCommitments.firmId, firmId)));
+    return result[0];
+  }
+
+  async createLpCommitment(data: InsertLpCommitment): Promise<LpCommitment> {
+    const result = await db.insert(lpCommitments).values(data).returning();
+    return result[0];
+  }
+
+  async updateLpCommitment(id: number, firmId: number, data: Partial<InsertLpCommitment>): Promise<LpCommitment | undefined> {
+    const result = await db.update(lpCommitments)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(lpCommitments.id, id), eq(lpCommitments.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Capital Calls
+  async getCapitalCalls(firmId: number, fundId?: number): Promise<CapitalCall[]> {
+    if (fundId) {
+      return db.select().from(capitalCalls).where(
+        and(eq(capitalCalls.firmId, firmId), eq(capitalCalls.fundId, fundId))
+      ).orderBy(desc(capitalCalls.callDate));
+    }
+    return db.select().from(capitalCalls).where(eq(capitalCalls.firmId, firmId)).orderBy(desc(capitalCalls.callDate));
+  }
+
+  async getCapitalCall(id: number, firmId: number): Promise<CapitalCall | undefined> {
+    const result = await db.select().from(capitalCalls).where(and(eq(capitalCalls.id, id), eq(capitalCalls.firmId, firmId)));
+    return result[0];
+  }
+
+  async createCapitalCall(data: InsertCapitalCall): Promise<CapitalCall> {
+    const result = await db.insert(capitalCalls).values(data).returning();
+    return result[0];
+  }
+
+  async updateCapitalCall(id: number, firmId: number, data: Partial<InsertCapitalCall>): Promise<CapitalCall | undefined> {
+    const result = await db.update(capitalCalls)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(capitalCalls.id, id), eq(capitalCalls.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Capital Call Allocations
+  async getCapitalCallAllocations(capitalCallId: number, firmId: number): Promise<CapitalCallAllocation[]> {
+    return db.select().from(capitalCallAllocations).where(
+      and(eq(capitalCallAllocations.capitalCallId, capitalCallId), eq(capitalCallAllocations.firmId, firmId))
+    ).orderBy(capitalCallAllocations.lpName);
+  }
+
+  async createCapitalCallAllocation(data: InsertCapitalCallAllocation): Promise<CapitalCallAllocation> {
+    const result = await db.insert(capitalCallAllocations).values(data).returning();
+    return result[0];
+  }
+
+  async updateCapitalCallAllocation(id: number, firmId: number, data: Partial<InsertCapitalCallAllocation>): Promise<CapitalCallAllocation | undefined> {
+    const result = await db.update(capitalCallAllocations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(capitalCallAllocations.id, id), eq(capitalCallAllocations.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // Capital Distributions
+  async getCapitalDistributions(firmId: number, fundId?: number): Promise<CapitalDistribution[]> {
+    if (fundId) {
+      return db.select().from(capitalDistributions).where(
+        and(eq(capitalDistributions.firmId, firmId), eq(capitalDistributions.fundId, fundId))
+      ).orderBy(desc(capitalDistributions.distributionDate));
+    }
+    return db.select().from(capitalDistributions).where(eq(capitalDistributions.firmId, firmId)).orderBy(desc(capitalDistributions.distributionDate));
+  }
+
+  async getCapitalDistribution(id: number, firmId: number): Promise<CapitalDistribution | undefined> {
+    const result = await db.select().from(capitalDistributions).where(and(eq(capitalDistributions.id, id), eq(capitalDistributions.firmId, firmId)));
+    return result[0];
+  }
+
+  async createCapitalDistribution(data: InsertCapitalDistribution): Promise<CapitalDistribution> {
+    const result = await db.insert(capitalDistributions).values(data).returning();
+    return result[0];
+  }
+
+  async updateCapitalDistribution(id: number, firmId: number, data: Partial<InsertCapitalDistribution>): Promise<CapitalDistribution | undefined> {
+    const result = await db.update(capitalDistributions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(capitalDistributions.id, id), eq(capitalDistributions.firmId, firmId)))
+      .returning();
+    return result[0];
+  }
+
+  // NAV Records
+  async getNavRecords(firmId: number, fundId?: number): Promise<NavRecord[]> {
+    if (fundId) {
+      return db.select().from(navRecords).where(
+        and(eq(navRecords.firmId, firmId), eq(navRecords.fundId, fundId))
+      ).orderBy(desc(navRecords.navDate));
+    }
+    return db.select().from(navRecords).where(eq(navRecords.firmId, firmId)).orderBy(desc(navRecords.navDate));
+  }
+
+  async getLatestNavRecord(fundId: number, firmId: number): Promise<NavRecord | undefined> {
+    const result = await db.select().from(navRecords).where(
+      and(eq(navRecords.fundId, fundId), eq(navRecords.firmId, firmId))
+    ).orderBy(desc(navRecords.navDate)).limit(1);
+    return result[0];
+  }
+
+  async createNavRecord(data: InsertNavRecord): Promise<NavRecord> {
+    const result = await db.insert(navRecords).values(data).returning();
+    return result[0];
+  }
+
+  async updateNavRecord(id: number, firmId: number, data: Partial<InsertNavRecord>): Promise<NavRecord | undefined> {
+    const result = await db.update(navRecords)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(navRecords.id, id), eq(navRecords.firmId, firmId)))
+      .returning();
+    return result[0];
   }
 }
 

@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Settings, Wallet, Sparkles, FileCheck, BarChart3, Building2, LogOut, Database } from "lucide-react";
+import { Home, Users, FileText, Settings, Wallet, Sparkles, FileCheck, BarChart3, Building2, LogOut, Database, GitCompare, Coins, LineChart } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,12 @@ const mainMenuItems = [
   { title: "Portfolios", url: "/portfolios", icon: Wallet },
   { title: "Securities", url: "/securities", icon: Database },
   { title: "KYC & Compliance", url: "/kyc/new", icon: FileText },
+];
+
+const operationsItems = [
+  { title: "Orca Recon", url: "/recon", icon: GitCompare },
+  { title: "Orca Capital", url: "/capital", icon: Coins },
+  { title: "Fund Analytics", url: "/fund", icon: LineChart },
 ];
 
 const aiToolsItems = [
@@ -75,6 +81,31 @@ export function AppSidebar({ firmName = "Acme Capital", userRole = "Compliance O
           </SidebarGroupContent>
         </SidebarGroup>
         
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+            Operations
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {operationsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url || location.startsWith(item.url)}
+                    className="transition-smooth"
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <a href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="text-xs font-medium px-2 py-1.5 flex items-center gap-2">
             <Sparkles className="h-3 w-3 text-primary" />

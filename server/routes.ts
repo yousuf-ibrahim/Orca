@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
-  insertClientSchema, 
-  insertKycApplicationSchema, 
+import {
+  insertClientSchema,
+  insertKycApplicationSchema,
   insertDocumentSchema,
   insertWealthInformationSchema,
   insertBeneficialOwnershipSchema,
@@ -16,7 +16,15 @@ import {
   insertSecuritiesMasterSchema,
   insertCustodianSchema,
   insertPortfolioSchema,
-  insertPositionSchema
+  insertPositionSchema,
+  insertReconRunSchema,
+  insertReconBreakSchema,
+  insertFundStructureSchema,
+  insertLpCommitmentSchema,
+  insertCapitalCallSchema,
+  insertCapitalCallAllocationSchema,
+  insertCapitalDistributionSchema,
+  insertNavRecordSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1157,6 +1165,290 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting position:", error);
       res.status(500).json({ error: "Failed to delete position" });
+    }
+  });
+
+  // ============================================
+  // ORCA RECON ROUTES
+  // ============================================
+
+  app.get("/api/recon/runs", async (req: Request, res: Response) => {
+    try {
+      const runs = await storage.getReconRuns(FIRM_ID);
+      res.json(runs);
+    } catch (error) {
+      console.error("Error fetching recon runs:", error);
+      res.status(500).json({ error: "Failed to fetch recon runs" });
+    }
+  });
+
+  app.get("/api/recon/runs/:id", async (req: Request, res: Response) => {
+    try {
+      const run = await storage.getReconRun(parseInt(req.params.id), FIRM_ID);
+      if (!run) return res.status(404).json({ error: "Recon run not found" });
+      res.json(run);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recon run" });
+    }
+  });
+
+  app.post("/api/recon/runs", async (req: Request, res: Response) => {
+    try {
+      const data = insertReconRunSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const run = await storage.createReconRun(data);
+      res.json(run);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create recon run" });
+    }
+  });
+
+  app.patch("/api/recon/runs/:id", async (req: Request, res: Response) => {
+    try {
+      const run = await storage.updateReconRun(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!run) return res.status(404).json({ error: "Recon run not found" });
+      res.json(run);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update recon run" });
+    }
+  });
+
+  app.get("/api/recon/breaks", async (req: Request, res: Response) => {
+    try {
+      const reconRunId = req.query.reconRunId ? parseInt(req.query.reconRunId as string) : undefined;
+      const openOnly = req.query.openOnly === "true";
+      const breaks = openOnly
+        ? await storage.getOpenReconBreaks(FIRM_ID)
+        : await storage.getReconBreaks(FIRM_ID, reconRunId);
+      res.json(breaks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recon breaks" });
+    }
+  });
+
+  app.post("/api/recon/breaks", async (req: Request, res: Response) => {
+    try {
+      const data = insertReconBreakSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const reconBreak = await storage.createReconBreak(data);
+      res.json(reconBreak);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create recon break" });
+    }
+  });
+
+  app.patch("/api/recon/breaks/:id", async (req: Request, res: Response) => {
+    try {
+      const reconBreak = await storage.updateReconBreak(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!reconBreak) return res.status(404).json({ error: "Recon break not found" });
+      res.json(reconBreak);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update recon break" });
+    }
+  });
+
+  // ============================================
+  // ORCA CAPITAL ROUTES
+  // ============================================
+
+  app.get("/api/funds", async (req: Request, res: Response) => {
+    try {
+      const funds = await storage.getFundStructures(FIRM_ID);
+      res.json(funds);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch funds" });
+    }
+  });
+
+  app.get("/api/funds/:id", async (req: Request, res: Response) => {
+    try {
+      const fund = await storage.getFundStructure(parseInt(req.params.id), FIRM_ID);
+      if (!fund) return res.status(404).json({ error: "Fund not found" });
+      res.json(fund);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch fund" });
+    }
+  });
+
+  app.post("/api/funds", async (req: Request, res: Response) => {
+    try {
+      const data = insertFundStructureSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const fund = await storage.createFundStructure(data);
+      res.json(fund);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create fund" });
+    }
+  });
+
+  app.patch("/api/funds/:id", async (req: Request, res: Response) => {
+    try {
+      const fund = await storage.updateFundStructure(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!fund) return res.status(404).json({ error: "Fund not found" });
+      res.json(fund);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update fund" });
+    }
+  });
+
+  app.get("/api/lp-commitments", async (req: Request, res: Response) => {
+    try {
+      const fundId = req.query.fundId ? parseInt(req.query.fundId as string) : undefined;
+      const commitments = await storage.getLpCommitments(FIRM_ID, fundId);
+      res.json(commitments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch LP commitments" });
+    }
+  });
+
+  app.post("/api/lp-commitments", async (req: Request, res: Response) => {
+    try {
+      const data = insertLpCommitmentSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const commitment = await storage.createLpCommitment(data);
+      res.json(commitment);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create LP commitment" });
+    }
+  });
+
+  app.patch("/api/lp-commitments/:id", async (req: Request, res: Response) => {
+    try {
+      const commitment = await storage.updateLpCommitment(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!commitment) return res.status(404).json({ error: "LP commitment not found" });
+      res.json(commitment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update LP commitment" });
+    }
+  });
+
+  app.get("/api/capital-calls", async (req: Request, res: Response) => {
+    try {
+      const fundId = req.query.fundId ? parseInt(req.query.fundId as string) : undefined;
+      const calls = await storage.getCapitalCalls(FIRM_ID, fundId);
+      res.json(calls);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch capital calls" });
+    }
+  });
+
+  app.get("/api/capital-calls/:id", async (req: Request, res: Response) => {
+    try {
+      const call = await storage.getCapitalCall(parseInt(req.params.id), FIRM_ID);
+      if (!call) return res.status(404).json({ error: "Capital call not found" });
+      const allocations = await storage.getCapitalCallAllocations(call.id, FIRM_ID);
+      res.json({ ...call, allocations });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch capital call" });
+    }
+  });
+
+  app.post("/api/capital-calls", async (req: Request, res: Response) => {
+    try {
+      const data = insertCapitalCallSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const call = await storage.createCapitalCall(data);
+      res.json(call);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create capital call" });
+    }
+  });
+
+  app.patch("/api/capital-calls/:id", async (req: Request, res: Response) => {
+    try {
+      const call = await storage.updateCapitalCall(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!call) return res.status(404).json({ error: "Capital call not found" });
+      res.json(call);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update capital call" });
+    }
+  });
+
+  app.post("/api/capital-calls/:id/allocations", async (req: Request, res: Response) => {
+    try {
+      const capitalCallId = parseInt(req.params.id);
+      const data = insertCapitalCallAllocationSchema.parse({ ...req.body, firmId: FIRM_ID, capitalCallId });
+      const allocation = await storage.createCapitalCallAllocation(data);
+      res.json(allocation);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create allocation" });
+    }
+  });
+
+  app.patch("/api/capital-calls/allocations/:id", async (req: Request, res: Response) => {
+    try {
+      const allocation = await storage.updateCapitalCallAllocation(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!allocation) return res.status(404).json({ error: "Allocation not found" });
+      res.json(allocation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update allocation" });
+    }
+  });
+
+  app.get("/api/distributions", async (req: Request, res: Response) => {
+    try {
+      const fundId = req.query.fundId ? parseInt(req.query.fundId as string) : undefined;
+      const distributions = await storage.getCapitalDistributions(FIRM_ID, fundId);
+      res.json(distributions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch distributions" });
+    }
+  });
+
+  app.post("/api/distributions", async (req: Request, res: Response) => {
+    try {
+      const data = insertCapitalDistributionSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const distribution = await storage.createCapitalDistribution(data);
+      res.json(distribution);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create distribution" });
+    }
+  });
+
+  app.patch("/api/distributions/:id", async (req: Request, res: Response) => {
+    try {
+      const distribution = await storage.updateCapitalDistribution(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!distribution) return res.status(404).json({ error: "Distribution not found" });
+      res.json(distribution);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update distribution" });
+    }
+  });
+
+  // ============================================
+  // NAV RECORDS ROUTES
+  // ============================================
+
+  app.get("/api/nav-records", async (req: Request, res: Response) => {
+    try {
+      const fundId = req.query.fundId ? parseInt(req.query.fundId as string) : undefined;
+      const records = await storage.getNavRecords(FIRM_ID, fundId);
+      res.json(records);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch NAV records" });
+    }
+  });
+
+  app.post("/api/nav-records", async (req: Request, res: Response) => {
+    try {
+      const data = insertNavRecordSchema.parse({ ...req.body, firmId: FIRM_ID });
+      const record = await storage.createNavRecord(data);
+      res.json(record);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.errors });
+      res.status(500).json({ error: "Failed to create NAV record" });
+    }
+  });
+
+  app.patch("/api/nav-records/:id", async (req: Request, res: Response) => {
+    try {
+      const record = await storage.updateNavRecord(parseInt(req.params.id), FIRM_ID, req.body);
+      if (!record) return res.status(404).json({ error: "NAV record not found" });
+      res.json(record);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update NAV record" });
     }
   });
 

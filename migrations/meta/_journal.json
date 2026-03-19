@@ -8,6 +8,13 @@
       "when": 1760928736499,
       "tag": "0000_spooky_mattie_franklin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773887046297,
+      "tag": "0001_chief_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

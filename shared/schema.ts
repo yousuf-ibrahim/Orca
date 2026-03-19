@@ -669,3 +669,365 @@ export const insertPositionSchema = createInsertSchema(positions).omit({
 });
 export type InsertPosition = z.infer<typeof insertPositionSchema>;
 export type Position = typeof positions.$inferSelect;
+
+// ============================================
+// ORCA RECON — RECONCILIATION ENGINE
+// ============================================
+
+// Reconciliation Runs (daily batches per custodian)
+export const reconRuns = pgTable("recon_runs", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  custodianId: integer("custodian_id").notNull().references(() => custodians.id),
+
+  runDate: date("run_date").notNull(),
+  status: text("status").notNull().default("pending"), // pending, running, completed, failed
+
+  // Summary statistics
+  totalPositions: integer("total_positions").default(0),
+  matchedPositions: integer("matched_positions").default(0),
+  breakCount: integer("break_count").default(0),
+  cashBreakCount: integer("cash_break_count").default(0),
+  toleranceBreachCount: integer("tolerance_breach_count").default(0),
+
+  // Run metadata
+  runDurationMs: integer("run_duration_ms"),
+  notes: text("notes"),
+  runBy: integer("run_by").references(() => users.id),
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertReconRunSchema = createInsertSchema(reconRuns).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertReconRun = z.infer<typeof insertReconRunSchema>;
+export type ReconRun = typeof reconRuns.$inferSelect;
+
+// Reconciliation Breaks (individual exceptions)
+export const reconBreaks = pgTable("recon_breaks", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  reconRunId: integer("recon_run_id").notNull().references(() => reconRuns.id),
+  portfolioId: integer("portfolio_id").references(() => portfolios.id),
+  custodianId: integer("custodian_id").notNull().references(() => custodians.id),
+  securityId: integer("security_id").references(() => securitiesMaster.id),
+
+  // Break classification
+  breakType: text("break_type").notNull(), // position_quantity, price_mismatch, cash_break, missing_position, extra_position, corporate_action
+  priority: text("priority").notNull().default("medium"), // low, medium, high, critical
+
+  // Orca (internal) side
+  orcaQuantity: decimal("orca_quantity", { precision: 20, scale: 6 }),
+  orcaPrice: decimal("orca_price", { precision: 20, scale: 6 }),
+  orcaValue: decimal("orca_value", { precision: 20, scale: 2 }),
+
+  // Custodian (external) side
+  custodianQuantity: decimal("custodian_quantity", { precision: 20, scale: 6 }),
+  custodianPrice: decimal("custodian_price", { precision: 20, scale: 6 }),
+  custodianValue: decimal("custodian_value", { precision: 20, scale: 2 }),
+
+  // Break metrics
+  quantityDifference: decimal("quantity_difference", { precision: 20, scale: 6 }),
+  valueDifference: decimal("value_difference", { precision: 20, scale: 2 }),
+  differencePercent: decimal("difference_percent", { precision: 10, scale: 4 }),
+
+  // Security info (denormalized for speed)
+  securityName: text("security_name"),
+  ticker: text("ticker"),
+  portfolioName: text("portfolio_name"),
+  custodianName: text("custodian_name"),
+
+  // Resolution workflow
+  status: text("status").notNull().default("open"), // open, acknowledged, investigating, resolved, escalated, suppressed
+  resolutionNotes: text("resolution_notes"),
+  rootCause: text("root_cause"), // data_entry_error, timing_difference, corporate_action, custodian_error, system_error
+  resolvedById: integer("resolved_by_id").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  agingDays: integer("aging_days").default(0),
+
+  breakDate: date("break_date").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertReconBreakSchema = createInsertSchema(reconBreaks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertReconBreak = z.infer<typeof insertReconBreakSchema>;
+export type ReconBreak = typeof reconBreaks.$inferSelect;
+
+// ============================================
+// ORCA CAPITAL — CAPITAL EVENT MANAGER
+// ============================================
+
+// Fund Structures (the fund entity)
+export const fundStructures = pgTable("fund_structures", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+
+  fundName: text("fund_name").notNull(),
+  fundCode: text("fund_code"), // Short identifier e.g. "ORCA-I"
+  strategyType: text("strategy_type"), // long_short_equity, macro, credit, multi_strat, real_estate, private_equity
+  legalStructure: text("legal_structure"), // LP, LLC, open_ended, closed_ended, cayman_exempted
+  currency: text("currency").notNull().default("USD"),
+  vintage: integer("vintage"), // Inception year
+
+  // Fund size
+  targetFundSize: decimal("target_fund_size", { precision: 20, scale: 2 }),
+  hardCap: decimal("hard_cap", { precision: 20, scale: 2 }),
+  totalCommitments: decimal("total_commitments", { precision: 20, scale: 2 }).default("0"),
+  calledCapital: decimal("called_capital", { precision: 20, scale: 2 }).default("0"),
+  uncalledCapital: decimal("uncalled_capital", { precision: 20, scale: 2 }).default("0"),
+  distributedCapital: decimal("distributed_capital", { precision: 20, scale: 2 }).default("0"),
+
+  // Fee structure
+  managementFeeRate: decimal("management_fee_rate", { precision: 10, scale: 4 }), // e.g. 0.0200 = 2%
+  performanceFeeRate: decimal("performance_fee_rate", { precision: 10, scale: 4 }), // e.g. 0.2000 = 20%
+  hurdleRate: decimal("hurdle_rate", { precision: 10, scale: 4 }), // e.g. 0.0800 = 8%
+  highWaterMark: boolean("high_water_mark").default(true),
+
+  // Fund admin & service providers
+  fundAdministrator: text("fund_administrator"),
+  auditor: text("auditor"),
+  legalCounsel: text("legal_counsel"),
+  primeBroker: text("prime_broker"),
+
+  inceptionDate: date("inception_date"),
+  firstCloseDate: date("first_close_date"),
+  finalCloseDate: date("final_close_date"),
+  investmentPeriodEnd: date("investment_period_end"),
+  fundTermDate: date("fund_term_date"),
+
+  status: text("status").notNull().default("fundraising"), // fundraising, investing, harvesting, liquidating, closed
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFundStructureSchema = createInsertSchema(fundStructures).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertFundStructure = z.infer<typeof insertFundStructureSchema>;
+export type FundStructure = typeof fundStructures.$inferSelect;
+
+// LP Commitments (investor commitment tracking)
+export const lpCommitments = pgTable("lp_commitments", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  fundId: integer("fund_id").notNull().references(() => fundStructures.id),
+  clientId: integer("client_id").references(() => clients.id), // Linked client record
+
+  // LP details
+  lpName: text("lp_name").notNull(),
+  lpType: text("lp_type"), // individual, family_office, pension_fund, endowment, fund_of_funds, sovereign_wealth, corporate
+  lpJurisdiction: text("lp_jurisdiction"),
+
+  // Commitment financials
+  committedCapital: decimal("committed_capital", { precision: 20, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("USD"),
+  calledCapital: decimal("called_capital", { precision: 20, scale: 2 }).default("0"),
+  uncalledCapital: decimal("uncalled_capital", { precision: 20, scale: 2 }),
+  calledPercent: decimal("called_percent", { precision: 10, scale: 4 }).default("0"),
+
+  // Distributions
+  distributedCapital: decimal("distributed_capital", { precision: 20, scale: 2 }).default("0"),
+  netContributions: decimal("net_contributions", { precision: 20, scale: 2 }),
+
+  // Timeline
+  commitmentDate: date("commitment_date").notNull(),
+  firstCloseDate: date("first_close_date"),
+  subscribedDate: date("subscribed_date"),
+
+  // Administrative
+  subscriptionDocsSigned: boolean("subscription_docs_signed").default(false),
+  kycApproved: boolean("kyc_approved").default(false),
+  wireReceived: boolean("wire_received").default(false),
+
+  status: text("status").notNull().default("committed"), // committed, fully_called, partial, inactive, withdrawn
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertLpCommitmentSchema = createInsertSchema(lpCommitments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertLpCommitment = z.infer<typeof insertLpCommitmentSchema>;
+export type LpCommitment = typeof lpCommitments.$inferSelect;
+
+// Capital Calls
+export const capitalCalls = pgTable("capital_calls", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  fundId: integer("fund_id").notNull().references(() => fundStructures.id),
+
+  callNumber: integer("call_number").notNull(), // Sequential: 1, 2, 3...
+  callDate: date("call_date").notNull(),
+  dueDate: date("due_date").notNull(),
+
+  // Call financials
+  callPercent: decimal("call_percent", { precision: 10, scale: 4 }), // % of total commitments
+  callAmount: decimal("call_amount", { precision: 20, scale: 2 }).notNull(),
+
+  // Purpose breakdown
+  purpose: text("purpose").notNull(), // investment, management_fees, expenses, recallable_capital
+  investmentAmount: decimal("investment_amount", { precision: 20, scale: 2 }),
+  managementFeeAmount: decimal("management_fee_amount", { precision: 20, scale: 2 }),
+  expensesAmount: decimal("expenses_amount", { precision: 20, scale: 2 }),
+
+  // Collection tracking
+  totalNoticed: decimal("total_noticed", { precision: 20, scale: 2 }),
+  totalReceived: decimal("total_received", { precision: 20, scale: 2 }).default("0"),
+  receiptPercent: decimal("receipt_percent", { precision: 10, scale: 4 }).default("0"),
+
+  // Fund admin reference
+  fundAdminReference: text("fund_admin_reference"),
+  wireInstructions: text("wire_instructions"),
+
+  status: text("status").notNull().default("draft"), // draft, sent, partially_received, fully_received, cancelled
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCapitalCallSchema = createInsertSchema(capitalCalls).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertCapitalCall = z.infer<typeof insertCapitalCallSchema>;
+export type CapitalCall = typeof capitalCalls.$inferSelect;
+
+// Capital Call LP Allocations (per-LP breakdown for each call)
+export const capitalCallAllocations = pgTable("capital_call_allocations", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  capitalCallId: integer("capital_call_id").notNull().references(() => capitalCalls.id),
+  lpCommitmentId: integer("lp_commitment_id").notNull().references(() => lpCommitments.id),
+
+  lpName: text("lp_name").notNull(),
+  allocatedAmount: decimal("allocated_amount", { precision: 20, scale: 2 }).notNull(),
+  receivedAmount: decimal("received_amount", { precision: 20, scale: 2 }).default("0"),
+  outstandingAmount: decimal("outstanding_amount", { precision: 20, scale: 2 }),
+
+  receivedDate: date("received_date"),
+  wireReference: text("wire_reference"),
+
+  status: text("status").notNull().default("pending"), // pending, received, partial, overdue, waived
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCapitalCallAllocationSchema = createInsertSchema(capitalCallAllocations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertCapitalCallAllocation = z.infer<typeof insertCapitalCallAllocationSchema>;
+export type CapitalCallAllocation = typeof capitalCallAllocations.$inferSelect;
+
+// Capital Distributions
+export const capitalDistributions = pgTable("capital_distributions", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  fundId: integer("fund_id").notNull().references(() => fundStructures.id),
+
+  distributionNumber: integer("distribution_number").notNull(),
+  distributionDate: date("distribution_date").notNull(),
+
+  totalAmount: decimal("total_amount", { precision: 20, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("USD"),
+
+  // Distribution type breakdown
+  distributionType: text("distribution_type").notNull(), // return_of_capital, realized_gains, dividend, recallable, management_fee_rebate
+  returnOfCapitalAmount: decimal("return_of_capital_amount", { precision: 20, scale: 2 }).default("0"),
+  realizedGainsAmount: decimal("realized_gains_amount", { precision: 20, scale: 2 }).default("0"),
+
+  // Per-LP allocations stored as JSON
+  lpAllocations: jsonb("lp_allocations").default([]), // [{lpCommitmentId, lpName, amount, sentDate, wireRef}]
+
+  // Fund admin reference
+  fundAdminReference: text("fund_admin_reference"),
+  relatedInvestment: text("related_investment"), // Which investment was monetized
+
+  status: text("status").notNull().default("draft"), // draft, approved, sent, paid, cancelled
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCapitalDistributionSchema = createInsertSchema(capitalDistributions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertCapitalDistribution = z.infer<typeof insertCapitalDistributionSchema>;
+export type CapitalDistribution = typeof capitalDistributions.$inferSelect;
+
+// ============================================
+// FUND ANALYTICS — NAV & PERFORMANCE
+// ============================================
+
+// NAV Records (fund-level NAV history)
+export const navRecords = pgTable("nav_records", {
+  id: serial("id").primaryKey(),
+  firmId: integer("firm_id").notNull().references(() => firms.id),
+  fundId: integer("fund_id").notNull().references(() => fundStructures.id),
+
+  navDate: date("nav_date").notNull(),
+
+  // AUM
+  grossAum: decimal("gross_aum", { precision: 20, scale: 2 }).notNull(),
+  netAum: decimal("net_aum", { precision: 20, scale: 2 }).notNull(),
+
+  // NAV per share
+  sharesOutstanding: decimal("shares_outstanding", { precision: 20, scale: 6 }),
+  navPerShare: decimal("nav_per_share", { precision: 20, scale: 6 }),
+
+  // Performance
+  mtdReturn: decimal("mtd_return", { precision: 10, scale: 6 }), // e.g. 0.0234 = 2.34%
+  qtdReturn: decimal("qtd_return", { precision: 10, scale: 6 }),
+  ytdReturn: decimal("ytd_return", { precision: 10, scale: 6 }),
+  inceptionReturn: decimal("inception_return", { precision: 10, scale: 6 }),
+
+  // Fees & expenses
+  grossReturn: decimal("gross_return", { precision: 10, scale: 6 }),
+  managementFeeAccrual: decimal("management_fee_accrual", { precision: 20, scale: 2 }),
+  performanceFeeAccrual: decimal("performance_fee_accrual", { precision: 20, scale: 2 }),
+  totalExpenses: decimal("total_expenses", { precision: 20, scale: 2 }),
+
+  // Capital flows
+  capitalCalled: decimal("capital_called", { precision: 20, scale: 2 }).default("0"),
+  capitalReturned: decimal("capital_returned", { precision: 20, scale: 2 }).default("0"),
+
+  // Confirmation
+  confirmedByFundAdmin: boolean("confirmed_by_fund_admin").default(false),
+  confirmedAt: timestamp("confirmed_at"),
+  confirmedBy: integer("confirmed_by").references(() => users.id),
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertNavRecordSchema = createInsertSchema(navRecords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertNavRecord = z.infer<typeof insertNavRecordSchema>;
+export type NavRecord = typeof navRecords.$inferSelect;
