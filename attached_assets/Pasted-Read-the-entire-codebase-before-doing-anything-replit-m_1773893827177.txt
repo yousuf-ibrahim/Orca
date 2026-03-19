@@ -1,0 +1,156 @@
+Read the entire codebase before doing anything — replit.md, ORCA_BUILD_PLAN.md, client/src directory, server/routes, shared/schema. Give me a quick summary of what's currently functional vs placeholder, then proceed with the following.
+WHAT TO BUILD: INFRASTRUCTURE AUDIT FEATURE
+Add a new /audit route to the existing app that feels native to the existing design system (Storm Neutral Scale, teal accents, shadcn/ui, Radix — match exactly what's already there).
+
+STEP 1: Database
+Add a Drizzle migration for a new audits table:
+
+id (serial primary key)
+created_at (timestamp, default now)
+firm_name (text)
+form_data (jsonb)
+report (jsonb)
+
+
+STEP 2: Multi-step intake form at /audit
+Five steps:
+Step 1 — Fund Profile
+
+Fund name (text input)
+AUM range (select): <$50M / $50M–$150M / $150M–$500M / $500M–$1B / $1B+
+Strategy (multi-select checkboxes): Long/Short Equity, Quantitative, Multi-Strategy, Fixed Income, Macro, Private Credit, Other
+Total team size (select): 1–5 / 6–15 / 16–50 / 50+
+Ops headcount (select): 0 / 1 / 2–3 / 4+
+
+Step 2 — Systems Inventory
+Each is a select with common options + "Other (specify)":
+
+Portfolio Management System: Advent Geneva, d1g1t, Addepar, Charles River, SS&C Eze, Bloomberg AIM, None, Other
+Order Management System: SS&C Eze OMS, Charles River, Flextrade, Bloomberg TSOX, None, Other
+Risk System: Axioma, Bloomberg PORT, MSCI Barra, FactSet, In-house, None, Other
+Market Data: Bloomberg, Refinitiv/LSEG, FactSet, Databento, yCharts, Multiple, None
+Fund Admin / Shadow NAV: SS&C, Citco, NAV Consulting, Apex, In-house, None, Other
+Custodian(s): RBC, CIBC, TD, Goldman Sachs, Morgan Stanley, Interactive Brokers, Multiple, Other
+Prime Broker(s): Goldman Sachs, Morgan Stanley, JPMorgan, Interactive Brokers, None, Multiple, Other
+Data Warehouse: Snowflake, AWS (S3/Redshift), Azure, GCP BigQuery, DuckDB, None (Excel/SharePoint), Other
+Investor Reporting: Salesforce, Backstop, Allvue, Excel/Manual, None, Other
+Research Management: VisibleAlpha, FactSet, Bloomberg, Internal Wiki/Notion, None, Other
+
+Step 3 — Pain Points
+Checkboxes, select all that apply:
+
+Reconciliation takes too long or breaks regularly
+NAV calculation is manual or error-prone
+No single source of truth for positions
+Market data costs are unclear or poorly managed
+Risk reporting is delayed or inconsistent
+Investor reporting requires significant manual effort
+Onboarding new systems takes months
+Key operational knowledge lives in one or two people
+Trade errors tracked in spreadsheets
+No audit trail for data lineage
+AI/automation initiatives stall due to data quality
+End-of-month close takes more than 2 business days
+
+Step 4 — Open Questions
+
+"What is the single most painful operational problem you face today?" (textarea, required)
+"What would success look like in 12 months?" (textarea, optional)
+"How many hours per week does your ops team spend on manual data work?" (select): <5 hrs / 5–15 hrs / 15–30 hrs / 30+ hrs / Unknown
+
+Step 5 — Review & Generate
+
+Summary of all answers
+"Generate Audit Report" button that calls the backend
+
+
+STEP 3: Server-side API route POST /api/audit/generate
+Call the Anthropic API server-side using process.env.ANTHROPIC_API_KEY. Model: claude-sonnet-4-20250514. Store the result in the audits table. Return the audit id to the client, then redirect to /audit/:id.
+Use this system prompt:
+You are Orca's infrastructure intelligence engine. You analyze hedge fund and asset manager operational tech stacks and produce expert Infrastructure Audit Reports.
+
+You have deep operational experience across portfolio management systems (Geneva, d1g1t, Addepar), reconciliation between custodians and shadow NAV systems, OMS/EMS trade lifecycle, market data vendor management, risk system integration, and data warehouse architecture.
+
+Be specific. Name real failure modes by their actual names. Reference real system integration patterns. If a fund has no OMS, say exactly what breaks. If they use Geneva and Interactive Brokers with no middleware, name the specific reconciliation failures that creates. Never use generic consulting language. Sound like a COO who has fixed these problems at 20 funds.
+
+Output ONLY valid JSON, no markdown, no preamble:
+{
+  "executive_summary": "2-3 sentences. Specific. What is the headline risk and maturity level.",
+  "maturity_score": <1-10 integer>,
+  "maturity_label": <"Early Stage"|"Developing"|"Functional"|"Mature"|"Institutional">,
+  "critical_risks": [
+    {
+      "title": "short title",
+      "description": "1-2 sentences, specific to their actual systems",
+      "severity": <"Critical"|"High"|"Medium">,
+      "affected_systems": ["system1", "system2"]
+    }
+  ],
+  "integration_gaps": [
+    {
+      "title": "short title",
+      "description": "what is missing or manual between these systems",
+      "between": ["system_a", "system_b"],
+      "consequence": "what actually breaks when this gap exists"
+    }
+  ],
+  "quick_wins": [
+    {
+      "title": "action title",
+      "description": "exactly what to do and why",
+      "effort": <"Low"|"Medium"|"High">,
+      "impact": <"Low"|"Medium"|"High">,
+      "time_to_value": "e.g. 1 week"
+    }
+  ],
+  "roadmap": [
+    {
+      "phase": <1|2|3>,
+      "title": "phase name",
+      "timeline": "e.g. Weeks 1-4",
+      "actions": ["specific action 1", "specific action 2"],
+      "outcome": "what the fund has at the end of this phase"
+    }
+  ],
+  "orca_recommendation": "One paragraph. What Orca would specifically do first for this fund, why, and what the outcome would be. Concrete, not generic."
+}
+Pass the full form data as the user message.
+
+STEP 4: Report display at /audit/:id
+Fetch the audit by id and render:
+
+Header: Fund name, date, maturity score as a circular gauge (1–10, red ≤4, amber 5–7, green ≥8), maturity label badge
+Executive Summary: full-width callout card
+Critical Risks: card grid, severity badge per card (Critical=red, High=amber, Medium=yellow), affected systems as tags
+Integration Gaps: table with columns — Gap / Between / Consequence
+Quick Wins: 2×2 matrix (x-axis effort Low→High, y-axis impact Low→High) with each quick win as a labeled dot plotted on the grid
+Roadmap: horizontal 3-phase timeline, each phase shows title, timeline, bulleted actions, outcome
+Orca's Recommendation: full-width card with teal left border, recommendation text, and a "Book a Discovery Call" CTA button (mailto:hello@tryorca.com)
+Export: "Download Report" button using window.print(), add print CSS to hide sidebar and nav
+
+
+STEP 5: Demo report at /audit/demo
+Hardcode a static report for this fund — no database call needed:
+Fund: Silverline Capital Partners | $150M–$500M | Long/Short Equity | 8 people | 2 ops staff
+Systems: Advent Geneva (PMS), No OMS, Bloomberg PORT (limited use), Bloomberg + yCharts (market data), SS&C (fund admin), RBC (custodian), Interactive Brokers (prime broker), no data warehouse, Excel/manual reporting, Excel + Bloomberg for research
+Pain points: Recon breaks, manual NAV, no position source of truth, IR reporting takes 2 days, key person risk on ops
+Make the findings specific and credible:
+
+Geneva↔IB reconciliation breaks on corporate actions and dividend reinvestment because there is no middleware normalizing position files between the two systems
+No OMS means the trade lifecycle from execution to settlement lives in email threads and broker portals — any break requires manual forensics across multiple inboxes
+SS&C shadow NAV is manually reconciled against Geneva at month-end, taking 1.5 days and creating a window where reported and actual NAV are unreconciled
+Bloomberg PORT is barely used because positions aren't fed into it automatically — risk is running off Excel snapshots that are 12–24 hours stale
+Maturity score: 4 / Developing
+
+
+STEP 6: Navigation
+Add "Infrastructure Audit" to the existing sidebar. Use the ClipboardCheck icon from Lucide. Link to /audit. Add a "View Sample Report" link somewhere on the existing home/dashboard page that goes to /audit/demo.
+
+CONSTRAINTS
+
+Do not break existing functionality
+Do not change the existing design system, color scheme, or component patterns — match exactly what's there
+Use the existing Drizzle migration pattern for the new table
+Use the existing Express router pattern for new API routes
+Use the existing TanStack Query pattern for client data fetching
+ANTHROPIC_API_KEY is already in Replit environment secrets — access via process.env.ANTHROPIC_API_KEY server-side only

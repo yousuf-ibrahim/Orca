@@ -457,3 +457,26 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+@media print {
+  [data-sidebar="sidebar"],
+  header,
+  footer,
+  [data-testid="button-sidebar-toggle"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .max-w-4xl {
+    max-width: 100% !important;
+  }
+}

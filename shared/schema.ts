@@ -1031,3 +1031,19 @@ export const insertNavRecordSchema = createInsertSchema(navRecords).omit({
 });
 export type InsertNavRecord = z.infer<typeof insertNavRecordSchema>;
 export type NavRecord = typeof navRecords.$inferSelect;
+
+// Infrastructure Audits
+export const audits = pgTable("audits", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  firmName: text("firm_name").notNull(),
+  formData: jsonb("form_data").notNull(),
+  report: jsonb("report"),
+});
+
+export const insertAuditSchema = createInsertSchema(audits).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAudit = z.infer<typeof insertAuditSchema>;
+export type Audit = typeof audits.$inferSelect;

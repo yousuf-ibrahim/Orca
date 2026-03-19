@@ -12,7 +12,8 @@ import {
   Clock,
   ArrowUpRight,
   ArrowDownRight,
-  Shield
+  Shield,
+  ClipboardCheck
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -320,7 +321,13 @@ export default function Dashboard() {
             Real-time market intelligence and operations overview
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link href="/audit/demo">
+            <Button variant="outline" size="sm" data-testid="button-view-sample-report">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Sample Audit Report
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" onClick={handleRefresh} data-testid="button-refresh-all">
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh All
@@ -413,6 +420,12 @@ export default function Dashboard() {
               description="View all portfolios"
               icon={TrendingUp}
               onClick={() => setLocation('/portfolios')}
+            />
+            <QuickActionCard
+              title="Infrastructure Audit"
+              description="AI analysis of your ops stack"
+              icon={ClipboardCheck}
+              onClick={() => setLocation('/audit')}
             />
           </CardContent>
         </Card>

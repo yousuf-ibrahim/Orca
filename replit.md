@@ -16,7 +16,20 @@ Preferred communication style: Simple, everyday language.
 Design aesthetic: Dark theme with Storm Neutral Scale (260 hue), Teal Accent Ladder (#3ea6b6), precision minimalism approach
 Brand positioning: "Addepar for small hedge funds" - enterprise infrastructure for boutique firms
 
-## Recent Changes (Phase 1 Implementation)
+## Recent Changes
+
+**Infrastructure Audit Feature (March 2026)**:
+- Added `audits` table to PostgreSQL schema (id, created_at, firm_name, form_data, report jsonb)
+- Built 5-step intake form at `/audit` — fund profile, systems inventory, pain points, open questions, review
+- Server-side Anthropic API integration (`claude-sonnet-4-5`) at `POST /api/audit/generate`, stores results in DB
+- Report display at `/audit/:id` with maturity gauge, risk cards, integration gaps table, effort/impact matrix, roadmap timeline
+- Static demo report at `/audit/demo` — Silverline Capital Partners case study with credible Geneva↔IB findings
+- Added "Infrastructure Audit" to sidebar (AI-Powered section, ClipboardCheck icon)
+- Added "Sample Audit Report" button to Dashboard header, Infrastructure Audit quick action card
+- Print CSS for `window.print()` report export (hides sidebar/nav)
+- Installed `@anthropic-ai/sdk` package
+
+## Phase 1 Implementation
 
 **Design System Overhaul (January 2026)**:
 - Implemented Storm Neutral Scale with 260 hue (--neutral-950 to --neutral-50)

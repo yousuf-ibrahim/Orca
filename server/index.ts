@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { authRouter } from "./routes/auth";
 import { investorRouter } from "./routes/investor";
 import marketRouter from "./routes/market";
+import auditRouter from "./routes/audit";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -28,6 +29,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/api/auth', authRouter);
 app.use('/api', investorRouter);
 app.use('/api/market', marketRouter);
+app.use('/api/audit', auditRouter);
 
 app.use((req, res, next) => {
   const start = Date.now();

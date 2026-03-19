@@ -1,0 +1,102 @@
+Read the existing codebase thoroughly before doing anything — especially 
+replit.md, ORCA_BUILD_PLAN.md, the client/src directory structure, 
+server/routes, and shared/schema. Give me a quick summary of what's 
+currently functional vs scaffolded vs placeholder, then proceed.
+
+---
+
+## THE STRATEGIC PROBLEM TO SOLVE IN THIS SESSION
+
+Orca currently has a lot of modules planned and partially built — 
+Securities Master, Portfolio Hub, Research Workspace, KYC/Compliance, etc. 
+That's the right long-term vision. But right now, if a COO at a $150M 
+fund lands on this app, there is nothing that immediately demonstrates 
+Orca's expertise and creates a reason to get on a call.
+
+The fix is building the **Infrastructure Audit** — a single, high-impact 
+feature that a prospect can complete in 10 minutes and walk away with a 
+credible, specific report about their operational stack. This is Orca's 
+proof of value before a single conversation happens.
+
+---
+
+## WHAT TO BUILD: THE INFRASTRUCTURE AUDIT
+
+Add a new route `/audit` to the existing app. This should feel native to 
+the existing design system (Storm Neutral Scale, teal accents, dark theme, 
+shadcn/ui components, Radix primitives — match exactly what's already there).
+
+### Route: `/audit`
+
+A multi-step intake form (use the existing step/wizard pattern if one 
+exists, otherwise build a clean stepped UI). Five steps:
+
+**Step 1 — Fund Profile**
+- Fund name (text input)
+- AUM range (select): <$50M / $50M–$150M / $150M–$500M / $500M–$1B / $1B+
+- Strategy (multi-select checkboxes): Long/Short Equity, Quantitative, 
+  Multi-Strategy, Fixed Income, Macro, Private Credit, Other
+- Total team size (select): 1–5 / 6–15 / 16–50 / 50+
+- Ops/middle office headcount (select): 0 / 1 / 2–3 / 4+
+
+**Step 2 — Systems Inventory**
+For each category, a select with common options + "Other (specify)":
+
+- Portfolio Management System: Advent Geneva, d1g1t, Addepar, 
+  Charles River, SS&C Eze, Bloomberg AIM, None, Other
+- Order Management System: SS&C Eze OMS, Charles River, Flextrade, 
+  Bloomberg TSOX, None, Other
+- Risk System: Axioma, Bloomberg PORT, MSCI Barra, FactSet, 
+  In-house, None, Other
+- Market Data: Bloomberg, Refinitiv/LSEG, FactSet, Databento, 
+  yCharts, Multiple, None
+- Fund Admin / Shadow NAV: SS&C, Citco, NAV Consulting, Apex, 
+  In-house, None, Other
+- Custodian(s): RBC, CIBC, TD, Goldman Sachs, Morgan Stanley, 
+  Interactive Brokers, Multiple, Other
+- Prime Broker(s): Goldman Sachs, Morgan Stanley, JPMorgan, 
+  Interactive Brokers, None, Multiple, Other
+- Data Warehouse: Snowflake, AWS (S3/Redshift), Azure, GCP BigQuery, 
+  DuckDB, None (Excel/SharePoint), Other
+- Investor Reporting: Salesforce, Backstop, Allvue, 
+  Excel/Manual, None, Other
+- Research Management: VisibleAlpha, FactSet, Bloomberg, 
+  Internal Wiki/Notion, None, Other
+
+**Step 3 — Pain Points**
+Checkboxes, select all that apply:
+- Reconciliation takes too long or breaks regularly
+- NAV calculation is manual or error-prone  
+- No single source of truth for positions
+- Market data costs are unclear or poorly managed
+- Risk reporting is delayed or inconsistent
+- Investor reporting requires significant manual effort
+- Onboarding new systems or vendors takes months
+- Key operational knowledge lives in one or two people
+- Trade errors are tracked in spreadsheets
+- No audit trail for data lineage or changes
+- AI/automation initiatives stall due to data quality
+- End-of-month close takes more than 2 business days
+
+**Step 4 — Open Questions**
+- "What is the single most painful operational problem you face today?" 
+  (textarea, required)
+- "What would a successful infrastructure overhaul look like in 12 months?" 
+  (textarea, optional)
+- "How many hours per week does your ops team spend on manual data work?" 
+  (select): <5 hrs / 5–15 hrs / 15–30 hrs / 30+ hrs / Unknown
+
+**Step 5 — Review & Generate**
+- Clean summary of all answers
+- "Generate Audit Report" button
+
+---
+
+### API Route: `POST /api/audit/generate`
+
+On submit, call the Anthropic API server-side (use the existing 
+ANTHROPIC_API_KEY from environment — do NOT hardcode a key).
+
+Use model: `claude-sonnet-4-20250514`
+
+System prompt:

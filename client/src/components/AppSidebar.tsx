@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Settings, Wallet, Sparkles, FileCheck, BarChart3, Building2, LogOut, Database, GitCompare, Coins, LineChart } from "lucide-react";
+import { Home, Users, FileText, Settings, Wallet, Sparkles, FileCheck, BarChart3, Building2, LogOut, Database, GitCompare, Coins, LineChart, ClipboardCheck } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +30,7 @@ const operationsItems = [
 const aiToolsItems = [
   { title: "Research Copilot", url: "/research", icon: Sparkles },
   { title: "Compliance Reports", url: "/compliance/reports", icon: FileCheck },
+  { title: "Infrastructure Audit", url: "/audit", icon: ClipboardCheck },
 ];
 
 interface AppSidebarProps {

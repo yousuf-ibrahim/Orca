@@ -23,6 +23,9 @@ import SecuritiesImport from "@/pages/SecuritiesImport";
 import Recon from "@/pages/Recon";
 import Capital from "@/pages/Capital";
 import FundAnalytics from "@/pages/FundAnalytics";
+import AuditForm from "@/pages/AuditForm";
+import AuditReport from "@/pages/AuditReport";
+import AuditDemo from "@/pages/AuditDemo";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Landing from "@/pages/Landing";
@@ -97,6 +100,21 @@ function Router() {
       <Route path="/fund">
         <ProtectedRoute requireInvestorType>
           <FundAnalytics />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/audit/demo">
+        <ProtectedRoute requireInvestorType>
+          <AuditDemo />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/audit/:id">
+        <ProtectedRoute requireInvestorType>
+          <AuditReport />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/audit">
+        <ProtectedRoute requireInvestorType>
+          <AuditForm />
         </ProtectedRoute>
       </Route>
       <Route component={NotFound} />
