@@ -1,464 +1,209 @@
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Printer,
-  ArrowLeft,
-  Calendar,
-  AlertTriangle,
-  Zap,
-  Map,
-  Building2,
-  ExternalLink,
-  CheckCircle2,
-  Info,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import { AuditReportContent } from "./AuditReport";
 
-const DEMO_REPORT = {
-  firmName: "Silverline Capital Partners",
-  createdAt: new Date().toISOString(),
-  aumRange: "$150M–$500M",
-  report: {
-    executive_summary:
-      "Silverline Capital Partners is operating at a Developing (4/10) maturity level, with critical single points of failure across the entire trade-to-NAV lifecycle. The fund's core risk is a Geneva↔Interactive Brokers stack with no middleware, no OMS, and a fund admin reconciliation process that is entirely manual — any corporate action or dividend event will produce position breaks that require forensic investigation across email threads and broker portals.",
-    maturity_score: 4,
-    maturity_label: "Developing" as const,
-    critical_risks: [
-      {
-        title: "Geneva↔IB Reconciliation Breaks on Corporate Actions",
-        description:
-          "Advent Geneva and Interactive Brokers exchange position files in incompatible formats with no middleware normalizing them. When IB processes a dividend reinvestment or stock split, Geneva's lot-level accounting won't match IB's aggregated position report, creating a P&L discrepancy that takes hours to manually forensic.",
-        severity: "Critical" as const,
-        affected_systems: ["Advent Geneva", "Interactive Brokers"],
-      },
-      {
-        title: "No OMS: Trade Lifecycle Lives in Email",
-        description:
-          "Without an OMS, allocation instructions flow from PMs via email or Bloomberg chat to the prime broker. Any break between execution and settlement requires manually cross-referencing broker confirms, Geneva blotter entries, and IB confirmations — there is no system of record for the trade lifecycle.",
-        severity: "Critical" as const,
-        affected_systems: ["Interactive Brokers", "Advent Geneva", "Bloomberg"],
-      },
-      {
-        title: "SS&C Shadow NAV Reconciled Manually at Month-End",
-        description:
-          "SS&C's shadow NAV is reconciled against Geneva monthly using exported spreadsheets. This 1.5-day manual process creates a window where reported NAV and actual NAV are unreconciled, exposing the fund to LP reporting errors and audit findings.",
-        severity: "High" as const,
-        affected_systems: ["SS&C Fund Admin", "Advent Geneva"],
-      },
-      {
-        title: "Bloomberg PORT Risk Running Off Stale Excel Snapshots",
-        description:
-          "Bloomberg PORT is licensed but not connected to Geneva via automated position feeds. Risk is calculated off Excel snapshots exported manually, meaning risk reports are 12–24 hours stale and risk limits cannot be enforced in real time.",
-        severity: "High" as const,
-        affected_systems: ["Bloomberg PORT", "Advent Geneva"],
-      },
-    ],
-    integration_gaps: [
-      {
-        title: "No position feed from Geneva to Bloomberg PORT",
-        description: "Positions are exported manually from Geneva as CSV and imported into Bloomberg PORT",
-        between: ["Advent Geneva", "Bloomberg PORT"],
-        consequence:
-          "Risk reports are 12–24 hours stale. Risk breaches are discovered after the fact. Month-end risk attribution requires manual Excel reconciliation before PORT can run.",
-      },
-      {
-        title: "No IB→Geneva middleware for corporate actions",
-        description: "IB corporate action notices arrive via portal; Geneva requires manual lots adjustment",
-        between: ["Interactive Brokers", "Advent Geneva"],
-        consequence:
-          "Every dividend, stock split, or rights issue creates position breaks. Resolving a single complex corporate action (e.g., a spinoff with fractional shares) can take 3–6 hours of ops time.",
-      },
-      {
-        title: "No Geneva→SS&C automated data feed",
-        description: "Month-end close requires manual export from Geneva and upload to SS&C",
-        between: ["Advent Geneva", "SS&C Fund Admin"],
-        consequence:
-          "1.5 business days of manual reconciliation at each month-end. A single Geneva entry error will cascade into SS&C, requiring back-and-forth email with the fund admin to identify root cause.",
-      },
-      {
-        title: "No trade notification system between PM and ops",
-        description: "Trade allocation instructions communicated via email or Bloomberg chat",
-        between: ["Portfolio Management", "Operations"],
-        consequence:
-          "Any trade error (wrong account, wrong quantity, wrong security) is discovered at end-of-day reconciliation, not at execution. Busted trades require manual reversal and re-entry in both Geneva and IB.",
-      },
-    ],
-    quick_wins: [
-      {
-        title: "Automate Geneva↔IB position file reconciliation",
-        description:
-          "Deploy a Python script (or Orca Recon) that pulls the IB daily position file at 5pm and reconciles it against Geneva's EOD positions, flagging breaks by category (corporate action, price, quantity). Eliminates 60% of manual recon time immediately.",
-        effort: "Low" as const,
-        impact: "High" as const,
-        time_to_value: "1 week",
-      },
-      {
-        title: "Set up daily Bloomberg PORT position feed from Geneva",
-        description:
-          "Configure Geneva's report engine to export a BPIPE-compatible position file at market close and upload it to Bloomberg PORT automatically. Real-time risk visibility for zero incremental license cost.",
-        effort: "Low" as const,
-        impact: "High" as const,
-        time_to_value: "3 days",
-      },
-      {
-        title: "Build a trade blotter in Excel/Notion as interim OMS",
-        description:
-          "Create a structured trade blotter with required fields (security, quantity, account, execution price, time, broker) shared between PM and ops. Not ideal but eliminates email-based trade instructions immediately.",
-        effort: "Low" as const,
-        impact: "Medium" as const,
-        time_to_value: "2 days",
-      },
-      {
-        title: "Document the month-end close checklist",
-        description:
-          "Codify the current manual SS&C reconciliation process in a step-by-step runbook. Reduces key-person risk on the ops head and makes the process trainable.",
-        effort: "Low" as const,
-        impact: "Medium" as const,
-        time_to_value: "1 day",
-      },
-    ],
-    roadmap: [
-      {
-        phase: 1 as const,
-        title: "Stabilize Recon & Reduce Manual Ops",
-        timeline: "Weeks 1–4",
-        actions: [
-          "Automate Geneva↔IB daily position reconciliation with automated break reporting",
-          "Configure Bloomberg PORT daily position feed from Geneva report engine",
-          "Document month-end close checklist and assign backup ops owner",
-          "Implement structured trade blotter to eliminate email-based allocations",
-        ],
-        outcome:
-          "Daily recon breaks are caught automatically, risk reporting is current, and the ops team has a backup for key-person dependencies.",
-      },
-      {
-        phase: 2 as const,
-        title: "Integrate SS&C and Add OMS Controls",
-        timeline: "Weeks 5–12",
-        actions: [
-          "Set up automated Geneva→SS&C data feed to eliminate month-end manual export",
-          "Evaluate lightweight OMS (Bloomberg TSOX or SS&C Eze) for trade lifecycle control",
-          "Connect IB corporate action feed to Geneva lot-level accounting",
-          "Build LP reporting dashboard from Geneva data, reducing report prep time",
-        ],
-        outcome:
-          "Month-end close drops from 1.5 days to under 4 hours. Trade breaks are caught at execution, not EOD. LP reports are generated in under 2 hours.",
-      },
-      {
-        phase: 3 as const,
-        title: "Build Institutional-Grade Data Infrastructure",
-        timeline: "Weeks 13–24",
-        actions: [
-          "Deploy a central data warehouse (Snowflake or DuckDB) as single source of truth for positions",
-          "Automate investor reporting from warehouse data, eliminating Excel-based LP letters",
-          "Evaluate risk system upgrade (Axioma or MSCI Barra) to replace Bloomberg PORT workarounds",
-          "Implement data lineage tracking for audit trail across Geneva, IB, and SS&C",
-        ],
-        outcome:
-          "A fully integrated ops stack where every position, trade, and NAV figure has an auditable lineage from execution to LP report.",
-      },
-    ],
-    orca_recommendation:
-      "For Silverline Capital Partners, Orca would start with Orca Recon — our automated reconciliation engine that connects directly to Advent Geneva and Interactive Brokers prime broker files. Within a week, we would have your Geneva↔IB position breaks categorized by type (price, quantity, corporate action), with automated email alerts to your ops team on any break above $10K. This immediately eliminates the daily 2–3 hours your ops person spends manually comparing position files. From there, we would configure your Bloomberg PORT feed from Geneva's report engine, giving you real-time risk visibility at zero additional cost. The combination of these two integrations — which Orca deploys as a managed service — would move you from a 4/10 to a 6/10 maturity score within 60 days, and free up enough ops capacity to add the SS&C automation in month three.",
+const SILVERLINE_REPORT = {
+  headline:
+    "You are one corporate action away from a NAV error that your fund admin catches before you do.",
+
+  executive_summary:
+    "Silverline Capital Partners is operating at a Developing (4/10) maturity level with critical single points of failure across every stage of the trade-to-NAV lifecycle. The fund's Geneva↔Interactive Brokers stack has no identifier normalization layer, meaning any reorganization event — spin-off, rights issue, ticker change — creates a silent position mismatch that neither system will surface automatically. Without an OMS, the trade lifecycle exists simultaneously in three places with no system of record, and any break requires 2–4 hours of inbox forensics. Left unaddressed, the most likely outcome is a NAV error discovered by SS&C before the ops team, surfaced to the LP base at exactly the wrong moment.",
+
+  maturity_score: 4,
+  maturity_label: "Developing" as const,
+
+  top_priority: {
+    title: "Deploy a reference data mapping layer between Geneva and Interactive Brokers",
+    why:
+      "Geneva books positions using SEDOL and ISIN. Interactive Brokers reports positions using ticker symbols. When a corporate action occurs — a spin-off, ticker change, rights issue — the two systems produce position files with no common identifier. The result is a silent break: Geneva shows the pre-action position, IB shows the post-action position, and neither system flags the discrepancy. You find out when SS&C calls.",
+    what_orca_does:
+      "Orca deploys a lightweight reference data mapping service that uses ISIN as the common key across Geneva and IB position files. The service runs nightly, normalizes identifiers across both systems, and produces a daily reconciliation report with breaks categorized by type: price variance, quantity mismatch, corporate action, or missing security. Any break above $10K triggers an automatic email alert to the ops team.",
+    timeline: "2 weeks to deploy, 1 week to validate",
+    outcome:
+      "Daily Geneva↔IB reconciliation is automated. Corporate action breaks are caught within 24 hours instead of at month-end. The ops team recovers approximately 6 hours per month previously spent on manual position file comparison.",
+  },
+
+  critical_risks: [
+    {
+      title: "Geneva↔IB Silent Position Breaks on Corporate Actions",
+      description:
+        "Geneva books on SEDOL/ISIN; Interactive Brokers reports on ticker. When a corporate action occurs — spin-off, rights issue, merger — the two systems produce position records with no common identifier. There is no middleware to reconcile them. The break is silent: it accumulates in the general ledger until month-end, when SS&C identifies the discrepancy during shadow NAV reconciliation. By then, the position has been marked incorrectly for weeks.",
+      severity: "Critical" as const,
+      affected_systems: ["Advent Geneva", "Interactive Brokers"],
+      cost_estimate:
+        "~6 hrs/month of ops time to manually research and resolve breaks (~$450/month). Tail risk: a missed break creates a NAV error that requires a fund admin restatement — LP notification event.",
+    },
+    {
+      title: "No OMS: Trade Lifecycle Lives in Three Systems Simultaneously",
+      description:
+        "Every trade executed through Interactive Brokers exists simultaneously in: (1) the IB execution blotter, (2) email confirmation threads between the PM and ops, and (3) Advent Geneva after manual booking. There is no system of record connecting them. When a break occurs — wrong account, wrong lot, partial fill booked as whole — the forensic process requires cross-referencing all three sources. Average investigation time for a disputed trade: 2–4 hours.",
+      severity: "Critical" as const,
+      affected_systems: ["Interactive Brokers", "Advent Geneva"],
+      cost_estimate:
+        "2–4 hrs per break event (~$150–$300 per incident). Estimated 3–5 incidents/month = $450–$1,500/month in ops time. Settlement failures that go undetected accumulate as failed trade charges from the prime broker.",
+    },
+    {
+      title: "SS&C Shadow NAV: 1.5-Day Window of Unreconciled Exposure",
+      description:
+        "SS&C reconciles shadow NAV against Geneva at month-end using manually exported spreadsheets. This process takes 1.5 business days. During that window, the reported NAV (from Geneva) and the verified NAV (from SS&C) are unreconciled. Any LP redemption request received during month-end close is processed against an unverified NAV. A single Geneva booking error in this window creates an over- or under-redemption that requires a NAV restatement.",
+      severity: "High" as const,
+      affected_systems: ["SS&C Fund Admin", "Advent Geneva"],
+      cost_estimate:
+        "~12 hrs of ops time per month-end (~$900/month). Tail risk: an LP redemption processed against unverified NAV creates a restatement obligation — legal review cost $15K–$50K per incident.",
+    },
+    {
+      title: "Bloomberg PORT Running on 24-Hour-Stale Position Data",
+      description:
+        "Bloomberg PORT is licensed but not connected to a live Geneva position feed. Positions are exported manually from Geneva as a CSV and uploaded into PORT. During normal markets, this means factor analysis and concentration risk reports are 12–24 hours stale. During volatile periods — when concentration limits are most likely to be breached — the risk team is looking at yesterday's positions. PORT alerts fire after the breach, not before.",
+      severity: "High" as const,
+      affected_systems: ["Bloomberg PORT", "Advent Geneva"],
+      cost_estimate:
+        "~2 hrs/week of ops time for manual export and upload (~$600/month). Risk exposure: a concentration breach that isn't caught until the next day's PORT run creates compliance documentation issues with your prime broker.",
+    },
+  ],
+
+  integration_gaps: [
+    {
+      title: "No identifier normalization between Geneva and IB",
+      description: "Geneva uses SEDOL/ISIN; IB reports in ticker symbols",
+      between: ["Advent Geneva", "Interactive Brokers"],
+      consequence:
+        "Every corporate action creates a silent position break. Spin-offs produce phantom positions in one system. Rights issues create quantity mismatches. The break accumulates silently until month-end reconciliation.",
+      fix: "Deploy a reference data mapping service using ISIN as the common key. Normalize all position files before comparison. Automate break reporting by category.",
+    },
+    {
+      title: "No automated Geneva→SS&C data feed",
+      description: "Month-end close requires manual CSV export from Geneva and upload to SS&C",
+      between: ["Advent Geneva", "SS&C Fund Admin"],
+      consequence:
+        "1.5 business days of manual reconciliation per month-end. Any Geneva entry error must be communicated to SS&C by email, creating a back-and-forth cycle that extends the reconciliation window.",
+      fix: "Configure Geneva's report engine to produce an SS&C-compatible NAV file on a scheduled basis. Automate the upload to SS&C's SFTP. Reduce month-end close from 1.5 days to under 4 hours.",
+    },
+    {
+      title: "No live position feed from Geneva to Bloomberg PORT",
+      description: "Positions exported manually from Geneva as CSV, uploaded to PORT ad hoc",
+      between: ["Advent Geneva", "Bloomberg PORT"],
+      consequence:
+        "Risk reports are 12–24 hours stale. Factor exposures, concentration limits, and VaR calculations are based on yesterday's positions. During drawdowns, this is exactly when real-time risk visibility matters most.",
+      fix: "Configure Geneva's BPIPE-compatible export to run at market close daily and feed Bloomberg PORT automatically. Zero additional license cost; requires only report configuration.",
+    },
+    {
+      title: "No trade notification system between PM and operations",
+      description: "Trade allocation instructions flow via email and Bloomberg chat",
+      between: ["Portfolio Management", "Operations / Geneva"],
+      consequence:
+        "Trade booking in Geneva depends on an ops person reading and interpreting an email or chat message correctly. A misread quantity, wrong account, or missed allocation creates a booking error that isn't caught until EOD reconciliation — or later.",
+      fix: "Implement a structured trade blotter (Google Sheets or Notion with required fields) as an interim OMS. Evaluate Bloomberg TSOX or SS&C Eze OMS for full lifecycle control within 90 days.",
+    },
+  ],
+
+  action_plan: [
+    {
+      when: "This week" as const,
+      action:
+        "Pull the last 6 months of corporate action events from Interactive Brokers and cross-reference each one against Geneva's position records. Document every instance where the two systems diverged — this audit alone will show you the full scope of the problem.",
+      role: "Ops Team",
+      effort: "Low" as const,
+      impact: "High" as const,
+      outcome:
+        "Quantified backlog of position breaks with root cause identified. This becomes the business case for the reconciliation fix.",
+    },
+    {
+      when: "This week" as const,
+      action:
+        "Document the current month-end close process in a step-by-step runbook, with owner assigned to each step and estimated time. Identify which steps require the ops lead specifically vs. which can be delegated.",
+      role: "Ops Team",
+      effort: "Low" as const,
+      impact: "Medium" as const,
+      outcome:
+        "Month-end close is no longer a single-person dependency. A second ops person can execute the process from the runbook.",
+    },
+    {
+      when: "This month" as const,
+      action:
+        "Implement automated ISIN-based position file matching between Geneva and Interactive Brokers. Run nightly, output a break report by category. Set alert thresholds for breaks above $10K.",
+      role: "External Vendor",
+      effort: "Low" as const,
+      impact: "High" as const,
+      outcome:
+        "Daily reconciliation is automated. Corporate action breaks are caught within 24 hours. Ops team recovers ~6 hours per month.",
+    },
+    {
+      when: "This month" as const,
+      action:
+        "Configure Geneva's report engine to export a daily position file in BPIPE-compatible format and upload it to Bloomberg PORT automatically at market close.",
+      role: "IT",
+      effort: "Low" as const,
+      impact: "High" as const,
+      outcome:
+        "Bloomberg PORT risk reports are based on current positions. Concentration limit monitoring becomes real-time.",
+    },
+    {
+      when: "This quarter" as const,
+      action:
+        "Build the business case for an OMS. Compare Bloomberg TSOX, SS&C Eze OMS, and Flextrade against Silverline's current trade volume, strategy mix, and prime broker setup. Present to CIO with cost/risk framing.",
+      role: "Leadership",
+      effort: "Medium" as const,
+      impact: "High" as const,
+      outcome:
+        "Decision made on OMS with implementation timeline. Trade lifecycle has a system of record for the first time.",
+    },
+    {
+      when: "This quarter" as const,
+      action:
+        "Configure an automated Geneva→SS&C data feed for month-end NAV reconciliation. Eliminate the manual CSV export/upload cycle. Target: month-end close under 4 hours.",
+      role: "External Vendor",
+      effort: "Medium" as const,
+      impact: "High" as const,
+      outcome:
+        "Month-end close drops from 1.5 days to under 4 hours. LP redemptions during close period are processed against verified NAV.",
+    },
+  ],
+
+  orca_engagement: {
+    recommended_start:
+      "We would start with the Geneva↔Interactive Brokers reconciliation gap — because it's where you're most exposed right now and because it's the fastest win. The corporate action backlog audit we describe in the action plan takes a day, and the findings will be alarming enough to accelerate every other decision.",
+    first_30_days:
+      "In the first 30 days, Orca maps your full position file exchange between Geneva and IB, deploys the identifier normalization service, and gets automated daily break reporting live. We also configure your Bloomberg PORT feed from Geneva so your risk team is working on current positions. By day 30, you have two of your four critical risks closed.",
+    investment:
+      "4-week infrastructure assessment and remediation sprint. Includes full tech stack mapping, automated reconciliation deployment, Bloomberg PORT feed configuration, and a prioritized 90-day roadmap for the OMS decision and SS&C automation.",
+    roi_framing:
+      "Your ops team is spending approximately $1,950/month on manual work that can be automated in four weeks. The tail risk — a NAV restatement triggered by a corporate action break or an LP redemption against unverified NAV — costs $15K–$50K in legal and fund admin fees, plus LP relationship damage. The question isn't whether to fix this. It's whether you fix it before or after the event that makes you wish you had.",
   },
 };
 
-type Report = typeof DEMO_REPORT.report;
-
-function MaturityGauge({ score, label }: { score: number; label: string }) {
-  const getColor = (s: number) => {
-    if (s <= 4) return { stroke: "hsl(var(--error))", text: "text-error" };
-    if (s <= 7) return { stroke: "hsl(var(--warning))", text: "text-warning" };
-    return { stroke: "hsl(var(--success))", text: "text-success" };
-  };
-  const color = getColor(score);
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference - (score / 10) * circumference;
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative">
-        <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="8" />
-          <circle
-            cx="50" cy="50" r={radius} fill="none"
-            stroke={color.stroke} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={circumference} strokeDashoffset={dashOffset}
-            transform="rotate(-90 50 50)"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-2xl font-bold ${color.text}`}>{score}</span>
-          <span className="text-xs text-muted-foreground">/10</span>
-        </div>
-      </div>
-      <Badge variant="outline" className={`text-xs ${color.text}`}>{label}</Badge>
-    </div>
-  );
-}
-
-function SeverityBadge({ severity }: { severity: "Critical" | "High" | "Medium" }) {
-  const styles = {
-    Critical: "bg-error/10 text-error border-error/20",
-    High: "bg-warning/10 text-warning border-warning/20",
-    Medium: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  };
-  return <Badge variant="outline" className={`text-xs ${styles[severity]}`}>{severity}</Badge>;
-}
-
-function EffortImpactMatrix({ quickWins }: { quickWins: Report["quick_wins"] }) {
-  const levelToNum = (level: string) => level === "Low" ? 0 : level === "Medium" ? 1 : 2;
-  const colors = ["bg-info/80", "bg-primary/80", "bg-success/80", "bg-warning/80", "bg-error/80"];
-
-  return (
-    <div className="relative h-72 border border-border rounded-lg overflow-hidden">
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px bg-border">
-        {[...Array(9)].map((_, i) => <div key={i} className="bg-card" />)}
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 flex justify-around pb-1 px-2">
-        {["Low Effort", "Med Effort", "High Effort"].map((l) => (
-          <span key={l} className="text-xs text-muted-foreground">{l}</span>
-        ))}
-      </div>
-      <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-around pl-1">
-        {["High", "Med", "Low"].map((l) => (
-          <span key={l} className="text-xs text-muted-foreground">{l}</span>
-        ))}
-      </div>
-      <div className="absolute inset-0 pb-6 pl-8">
-        {quickWins.map((qw, i) => {
-          const x = levelToNum(qw.effort);
-          const y = 2 - levelToNum(qw.impact);
-          return (
-            <div
-              key={i}
-              className={`absolute flex h-6 w-6 items-center justify-center rounded-full ${colors[i % colors.length]} text-white text-xs font-bold cursor-pointer`}
-              style={{ left: `${(x / 3) * 100 + 16}%`, top: `${(y / 3) * 100 + 5}%` }}
-              title={`${qw.title}: ${qw.description}`}
-            >
-              {i + 1}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function RoadmapTimeline({ roadmap }: { roadmap: Report["roadmap"] }) {
-  const phaseColors = ["border-info bg-info/5", "border-primary bg-primary/5", "border-success bg-success/5"];
-  const dotColors = ["bg-info", "bg-primary", "bg-success"];
-
-  return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
-      {roadmap.map((phase, i) => (
-        <div key={phase.phase} className={`flex-1 min-w-56 border-2 rounded-lg p-4 space-y-3 ${phaseColors[i]}`}>
-          <div className="flex items-center gap-2">
-            <div className={`h-3 w-3 rounded-full ${dotColors[i]}`} />
-            <div>
-              <p className="text-xs text-muted-foreground">{phase.timeline}</p>
-              <p className="font-semibold text-sm">{phase.title}</p>
-            </div>
-          </div>
-          <ul className="space-y-1.5">
-            {phase.actions.map((action, j) => (
-              <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground">
-                <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                {action}
-              </li>
-            ))}
-          </ul>
-          <div className="pt-2 border-t border-border/50">
-            <p className="text-xs font-medium text-foreground/70">{phase.outcome}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function AuditDemo() {
   const [, setLocation] = useLocation();
-  const { report, firmName, aumRange } = DEMO_REPORT;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 print:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 print:hidden">
-            <Building2 className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{firmName}</h1>
-              <Badge variant="secondary" className="text-xs">Sample Report</Badge>
-            </div>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-              <span>·</span>
-              <span>{aumRange} AUM</span>
-              <span>·</span>
-              <span>Long/Short Equity</span>
-            </div>
-          </div>
+    <div className="max-w-4xl mx-auto print:max-w-full">
+      {/* Demo banner */}
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 print:hidden">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs text-warning border-warning/40 bg-warning/10">
+            Sample Report
+          </Badge>
+          <p className="text-sm text-muted-foreground">
+            This is a demonstration report for Silverline Capital Partners. Run your own audit to get a report specific to your fund.
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <MaturityGauge score={report.maturity_score} label={report.maturity_label} />
-          <div className="flex flex-col gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" />
-              Download Report
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/audit")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Run Your Audit
-            </Button>
-          </div>
-        </div>
+        <Button size="sm" onClick={() => setLocation("/audit")} data-testid="button-run-your-audit">
+          Run Your Audit
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
 
-      <Card className="border-border/50 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Info className="h-4 w-4 text-primary" />
-            Executive Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-relaxed">{report.executive_summary}</p>
-        </CardContent>
-      </Card>
-
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <AlertTriangle className="h-4 w-4 text-error" />
-          <h2 className="text-lg font-semibold">Critical Risks</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {report.critical_risks.map((risk, i) => (
-            <Card key={i} className="border-border/50">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-sm font-semibold">{risk.title}</CardTitle>
-                  <SeverityBadge severity={risk.severity} />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">{risk.description}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {risk.affected_systems.map((sys) => (
-                    <Badge key={sys} variant="secondary" className="text-xs">{sys}</Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <ExternalLink className="h-4 w-4 text-warning" />
-          <h2 className="text-lg font-semibold">Integration Gaps</h2>
-        </div>
-        <Card className="border-border/50">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Gap</th>
-                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Between</th>
-                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Consequence</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.integration_gaps.map((gap, i) => (
-                    <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="p-3 font-medium align-top">{gap.title}</td>
-                      <td className="p-3 align-top">
-                        <div className="flex flex-wrap gap-1.5">
-                          {gap.between.map((sys) => (
-                            <Badge key={sys} variant="outline" className="text-xs">{sys}</Badge>
-                          ))}
-                        </div>
-                        {gap.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{gap.description}</p>
-                        )}
-                      </td>
-                      <td className="p-3 text-muted-foreground text-xs align-top">{gap.consequence}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Zap className="h-4 w-4 text-success" />
-          <h2 className="text-lg font-semibold">Quick Wins</h2>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <p className="text-xs text-muted-foreground mb-3">Effort vs. Impact matrix</p>
-            <EffortImpactMatrix quickWins={report.quick_wins} />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-3">Numbered items correspond to matrix</p>
-            <div className="space-y-3">
-              {report.quick_wins.map((qw, i) => {
-                const colors = ["bg-info/80", "bg-primary/80", "bg-success/80", "bg-warning/80"];
-                return (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${colors[i % colors.length]} text-white text-xs font-bold`}>
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{qw.title}</p>
-                      <p className="text-xs text-muted-foreground">{qw.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">Effort: {qw.effort}</Badge>
-                        <Badge variant="outline" className="text-xs">Impact: {qw.impact}</Badge>
-                        <span className="text-xs text-muted-foreground">{qw.time_to_value}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Map className="h-4 w-4 text-info" />
-          <h2 className="text-lg font-semibold">Roadmap</h2>
-        </div>
-        <RoadmapTimeline roadmap={report.roadmap} />
-      </div>
-
-      <Card className="border-l-4 border-primary bg-primary/5">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-primary">Orca's Recommendation</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm leading-relaxed">{report.orca_recommendation}</p>
-          <Button
-            onClick={() => window.location.href = "mailto:hello@tryorca.com?subject=Infrastructure%20Audit%20Discovery%20Call"}
-            data-testid="button-discovery-call-demo"
-          >
-            Book a Discovery Call
-            <ExternalLink className="ml-2 h-4 w-4" />
-          </Button>
-        </CardContent>
-      </Card>
+      <AuditReportContent
+        firmName="Silverline Capital Partners"
+        createdAt={new Date().toISOString()}
+        aumRange="$150M–$500M"
+        strategy="Long/Short Equity"
+        report={SILVERLINE_REPORT}
+        onBack={() => setLocation("/audit")}
+        backLabel="Run Your Audit"
+      />
     </div>
   );
 }

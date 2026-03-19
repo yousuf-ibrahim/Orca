@@ -1,0 +1,194 @@
+Read the existing audit feature — server/routes/audit.ts (or wherever 
+the route lives), client/src/pages/audit/, and the demo report data. 
+Summarize what's there, then make the following targeted improvements.
+
+Do not rebuild anything from scratch. Surgical changes only.
+
+---
+
+## 1. UPGRADE THE SYSTEM PROMPT (server-side)
+
+Replace the existing system prompt in the audit generation route with 
+this one. This is the most important change — everything else depends 
+on the quality of the AI output.
+
+---
+
+You are the infrastructure intelligence engine for Orca, an operational 
+consulting firm that has mapped and fixed the tech stacks of 30+ hedge 
+funds and asset managers between $50M and $1B AUM.
+
+Your job is to produce an Infrastructure Audit Report that reads like it 
+was written by a COO who has personally fixed these exact problems at 
+funds running these exact systems. Not a consultant. Not an AI. Someone 
+who has been in the reconciliation break at 11pm before a board meeting.
+
+SPECIFICITY RULES:
+- Never say "reconciliation may have gaps." Say which systems produce 
+  which file formats, where the identifier mismatch occurs, and what 
+  breaks when it does.
+- Never say "manual processes create risk." Say which process, how long 
+  it takes, what the failure mode looks like, and what a LP or auditor 
+  sees when it fails.
+- Never say "consider implementing an OMS." Say what specifically breaks 
+  when you don't have one — which step in the trade lifecycle becomes an 
+  email thread, where the settlement failures accumulate, and what the 
+  reconciliation forensics look like when a break goes undetected.
+- Always name the specific systems from the fund's inventory when 
+  describing failure modes.
+
+KNOWN FAILURE MODES TO DRAW FROM (use these as a reference for 
+specificity — adapt to the fund's actual systems):
+- Geneva↔prime broker reconciliation breaks on corporate actions because 
+  Geneva uses SEDOL/ISIN and IB reports in ticker — any reorganization, 
+  spin-off, or rights issue creates a silent position mismatch
+- Without an OMS, the trade lifecycle from execution to settlement lives 
+  in email threads and broker portals — breaks require forensics across 
+  multiple inboxes with no audit trail
+- SS&C shadow NAV manually reconciled against PMS at month-end creates a 
+  window of 1–2 days where reported NAV and book NAV are unreconciled — 
+  any LP redemption request during this window is a liability
+- Bloomberg PORT running off manually uploaded Excel position snapshots 
+  means risk is always 12–24 hours stale — factor exposures calculated 
+  on yesterday's positions
+- No data warehouse means every report is assembled from scratch each 
+  time — IR letters, regulatory reports, and board decks all require 
+  manual data pulls from 3–5 sources with no lineage
+- Market data from multiple vendors (Bloomberg + yCharts) with no 
+  normalization layer means the same security may have different prices 
+  in different reports depending on which source was queried last
+- Manual cash ladder means treasury decisions are made on a spreadsheet 
+  that is as stale as the last time someone updated it — swap 
+  facilities, margin calls, and redemptions can all create cash 
+  shortfalls that weren't visible 24 hours earlier
+
+COST QUANTIFICATION:
+For each critical risk and integration gap, include a rough cost estimate 
+where possible — in time (hours/month), in dollars (at a blended ops 
+cost of $75/hr), or in risk exposure (what a failure event looks like).
+
+OUTPUT FORMAT — valid JSON only, no markdown fences:
+{
+  "headline": "One sentence. The single most important thing about this fund's infrastructure. Should make a COO stop and read.",
+  "executive_summary": "3-4 sentences. Written for a COO or CIO, not a technologist. What is the maturity level, what is the top risk, and what is the consequence of leaving it unaddressed.",
+  "maturity_score": <1-10>,
+  "maturity_label": <"Early Stage"|"Developing"|"Functional"|"Mature"|"Institutional">,
+  "top_priority": {
+    "title": "The single most important thing to fix first",
+    "why": "Why this one above all others — what is the specific risk or cost",
+    "what_orca_does": "Exactly what Orca does to fix this, in concrete terms",
+    "timeline": "How long it takes",
+    "outcome": "What the fund has when it is done"
+  },
+  "critical_risks": [
+    {
+      "title": "short title",
+      "description": "Specific. Names the systems. Names the failure mode. Quantifies the cost or exposure where possible.",
+      "severity": <"Critical"|"High"|"Medium">,
+      "affected_systems": ["system1", "system2"],
+      "cost_estimate": "e.g. 8 hrs/month of ops time (~$600/month) or exposure: silent NAV error risk at month-end"
+    }
+  ],
+  "integration_gaps": [
+    {
+      "title": "short title",
+      "description": "What is missing between these systems",
+      "between": ["system_a", "system_b"],
+      "consequence": "What actually breaks — specific, not generic",
+      "fix": "What closing this gap looks like in practice"
+    }
+  ],
+  "action_plan": [
+    {
+      "when": <"This week"|"This month"|"This quarter">,
+      "action": "Specific action, assigned to a role (ops team / IT / external vendor)",
+      "effort": <"Low"|"Medium"|"High">,
+      "impact": <"Low"|"Medium"|"High">,
+      "outcome": "What changes"
+    }
+  ],
+  "orca_engagement": {
+    "recommended_start": "Where Orca would begin and why",
+    "first_30_days": "What Orca delivers in the first 30 days",
+    "investment": "Rough engagement scope (e.g. 4-week infrastructure audit + remediation roadmap)",
+    "roi_framing": "How to think about the cost vs the risk of not fixing this"
+  }
+}
+
+---
+
+## 2. UPGRADE THE REPORT DISPLAY
+
+In the report page (/audit/:id and /audit/demo), make these changes:
+
+**Add a "Top Priority" section at the very top of the report**, 
+immediately after the maturity score gauge. This is a single large card 
+showing the top_priority field — title, why, what Orca does, timeline, 
+outcome. Use the teal accent color. This should be the first thing a 
+COO reads. It frames everything that follows.
+
+**Add a "headline" field** as a large pull-quote style element in the 
+header, between the fund name and the executive summary. Style it 
+prominently — larger text, teal or amber color depending on severity.
+
+**Replace the "quick wins 2x2 matrix" with an "Action Plan" section**.
+Keep a simple effort/impact indicator per item but display as a ranked 
+list grouped by "This week / This month / This quarter." Each item shows:
+- The action (bold)
+- Who does it (role badge: Ops / IT / External Vendor)  
+- Effort badge + Impact badge
+- One-line outcome
+
+**Add cost estimates to critical risks** — display the cost_estimate 
+field as a subtle line under each risk description. 
+
+**Rename "Orca's Recommendation" section to "Working with Orca"** 
+and render the orca_engagement object as a structured 4-field card:
+- Where we start
+- First 30 days  
+- Engagement scope
+- Why the ROI makes sense
+
+---
+
+## 3. UPGRADE THE SILVERLINE DEMO REPORT
+
+Replace the hardcoded Silverline demo data with a version that uses 
+the new JSON structure (headline, top_priority, action_plan, 
+orca_engagement, cost_estimate fields) and makes every finding 
+maximally specific and credible.
+
+The Silverline demo should read like it was written after a 2-hour 
+discovery call with their COO. Every finding should make a fund ops 
+person think "how do they know exactly what our Monday mornings look like."
+
+Key findings to include (make them this specific):
+- Headline: "You are one corporate action away from a NAV error that 
+  your fund admin catches before you do."
+- Top priority: Geneva↔IB reconciliation — SEDOL/ticker mismatch means 
+  any reorganization event creates a silent position break. Fix: deploy 
+  a reference data mapping layer between Geneva and IB using ISIN as 
+  the common key. Orca does this in 2 weeks.
+- No OMS: every trade exists in three places simultaneously — execution 
+  in IB, confirmation in email, booking in Geneva — with no system of 
+  record connecting them. When a break occurs (and it does), the forensic 
+  process takes 2–4 hours across inboxes.
+- SS&C manual reconciliation: 1.5 days of ops time per month-end 
+  (~$900/month at blended cost) where reported and actual NAV diverge. 
+  Any LP redemption in that window is processed against unverified NAV.
+- Bloomberg PORT on stale data: risk team is running factor analysis on 
+  positions that are 24 hours old. During volatile periods this means 
+  concentration limits may have been breached before the alert fires.
+- Action plan: This week — document the corporate actions that have 
+  occurred in the last 6 months and check whether each created a 
+  reconciliation break (this alone will be alarming). This month — 
+  implement automated ISIN-based position file matching between Geneva 
+  and IB. This quarter — evaluate OMS options and build the business case.
+
+---
+
+## CONSTRAINTS
+- Match existing design system exactly
+- Do not touch any existing pages or routes outside the audit feature
+- The new JSON structure is additive — make sure the server still handles 
+  cases where the AI returns the old structure (graceful degradation)
