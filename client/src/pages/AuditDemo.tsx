@@ -186,11 +186,11 @@ export default function AuditDemo() {
             Sample Report
           </Badge>
           <p className="text-sm text-muted-foreground">
-            This is a demonstration report for Silverline Capital Partners. Run your own audit to get a report specific to your fund.
+            This is a sample report for Silverline Capital Partners (fictional). Run the audit for your own fund — it takes 10 minutes.
           </p>
         </div>
         <Button size="sm" onClick={() => setLocation("/audit")} data-testid="button-run-your-audit">
-          Run Your Audit
+          Run My Audit
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

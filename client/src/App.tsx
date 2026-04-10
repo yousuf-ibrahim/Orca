@@ -102,21 +102,9 @@ function Router() {
           <FundAnalytics />
         </ProtectedRoute>
       </Route>
-      <Route path="/audit/demo">
-        <ProtectedRoute requireInvestorType>
-          <AuditDemo />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/audit/:id">
-        <ProtectedRoute requireInvestorType>
-          <AuditReport />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/audit">
-        <ProtectedRoute requireInvestorType>
-          <AuditForm />
-        </ProtectedRoute>
-      </Route>
+      <Route path="/audit/demo" component={AuditDemo} />
+      <Route path="/audit/:id" component={AuditReport} />
+      <Route path="/audit" component={AuditForm} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -125,7 +113,8 @@ function Router() {
 function AppLayout() {
   const [location] = useLocation();
   const { user } = useAuthStore();
-  const isAuthPage = location === "/" || location === "/login" || location === "/onboarding";
+  const isAuthPage = location === "/" || location === "/login" || location === "/onboarding"
+    || location === "/audit" || location === "/audit/demo" || location.startsWith("/audit/");
 
   const sidebarStyle = {
     "--sidebar-width": "16rem",

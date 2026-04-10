@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import {
   Printer,
   ArrowLeft,
@@ -18,6 +19,7 @@ import {
   ListChecks,
   GitMerge,
   Handshake,
+  Link,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -327,6 +329,13 @@ export function AuditReportContent({
   backLabel?: string;
 }) {
   const hasNewStructure = !!(report.top_priority || report.action_plan || report.orca_engagement);
+  const { toast } = useToast();
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      toast({ title: "Link copied", description: "Report URL copied to clipboard." });
+    });
+  };
 
   return (
     <div className="space-y-8 print:space-y-6">
@@ -352,6 +361,10 @@ export function AuditReportContent({
             <Button variant="outline" size="sm" onClick={() => window.print()} data-testid="button-print-report">
               <Printer className="mr-2 h-4 w-4" />
               Download Report
+            </Button>
+            <Button variant="outline" size="sm" onClick={copyLink} data-testid="button-copy-link">
+              <Link className="mr-2 h-4 w-4" />
+              Copy Link
             </Button>
             <Button variant="ghost" size="sm" onClick={onBack} data-testid="button-back-to-audit">
               <ArrowLeft className="mr-2 h-4 w-4" />
